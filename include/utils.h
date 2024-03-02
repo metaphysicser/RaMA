@@ -28,10 +28,6 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
-// Choose the correct path separator based on the operating system
-
-#define PATH_SEPARATOR  "/";
-
 
 
 class Serializable {

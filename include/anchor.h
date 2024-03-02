@@ -62,15 +62,16 @@ struct Anchor {
 
         // Reserve memory to improve efficiency
         mergedPairs.reserve(100); 
+        uint_t rare_pair_index = 0;
 
         for (Anchor* child : children) {
             // Recursively merge child pairs
             RareMatchPairs childPairs = child->mergeRareMatchPairs();
             mergedPairs.insert(mergedPairs.end(), childPairs.begin(), childPairs.end());
+            if (rare_match_pairs.begin() + rare_pair_index != rare_match_pairs.end())
+                mergedPairs.insert(mergedPairs.end(), rare_match_pairs.begin()+rare_pair_index, rare_match_pairs.begin() + rare_pair_index + 1);
+            rare_pair_index++;
         }
-
-        // Directly append rare_match_pairs if needed
-        mergedPairs.insert(mergedPairs.end(), rare_match_pairs.begin(), rare_match_pairs.end());
 
         return mergedPairs;
     }

@@ -19,7 +19,7 @@
  // Created: 2024-01-30
 #pragma once
 
-#include "common.h"
+#include "config.h"
 #include "utils.h"
 
 #include <chrono>

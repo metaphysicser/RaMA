@@ -19,7 +19,7 @@
  // Created: 2024-02-04
 #pragma once
 
-#include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "utils.h"
 #include "gsacak.h"

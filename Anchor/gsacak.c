@@ -3,7 +3,7 @@
 extern "C" {
 #endif
 
-#include "../include/gsacak.h"
+#include "gsacak.h"
     // #if defined(max)
     // #undef max
 #define max(a,b) ((a) > (b) ? (a) : (b))

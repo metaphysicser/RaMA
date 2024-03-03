@@ -17,20 +17,19 @@
  // Author: Pinglu Zhang
  // Contact: pingluzhang@outlook.com
  // Created: 2024-01-29
-#include "common.h"
+#include "config.h"
 #include "utils.h"
 #include "logging.h"
 #include "anchor.h"
 #include "threadpool.h"
 #include "pairwise_alignment.h"
-// #include "WFA2-lib/bindings/cpp/WFAligner.hpp"
 
 Logger logger("/mnt/f/code/vs_code/RaMA/output/", "RaMA", true, info);
 
 
 int main(int argc, char** argv) {
 	std::ios::sync_with_stdio(false);
-
+	
 	const char* data_path = "/mnt/f/code/vs_code/RaMA/data/human.fasta";
 
 	std::vector<SequenceInfo>* data = new std::vector<SequenceInfo>(readDataPath(data_path));
@@ -39,12 +38,6 @@ int main(int argc, char** argv) {
 
 	delete data;
 	logger.info() << "Max memory used is " << logger.getMaxMemoryUsed() << std::endl;
-	//wfa::WFAlignerGapAffine aligner(4, 6, 2, wfa::WFAligner::Alignment, wfa::WFAligner::MemoryHigh);
-	//std::string pattern = "TCTTTACTCGCGCGTTGGAGAAATACAATAGT";
-	//std::string text = "TCTATACTGCGCGTTTGGAGAAATAAAATAGT";
-	//aligner.alignEnd2End(pattern, text); // Align
-	//std::string cigar = aligner.getAlignmentCigar();
-	//std::cout << "CIGAR: " << cigar << std::endl;
-	//std::cout << "Alignment score " << aligner.getAlignmentScore() << std::endl;
+
 	return 0;
 }

@@ -75,7 +75,7 @@ struct RareMatchPair {
 // Alias for a vector of RareMatchPair objects.
 using RareMatchPairs = std::vector<RareMatchPair>;
 
-void saveRareMatchPairsToCSV(const RareMatchPairs& pairs, const std::string& filename);
+void saveRareMatchPairsToCSV(const RareMatchPairs& pairs, const std::string& filename, uint_t fst_len);
 
 // Represents an interval within the LCP (Longest Common Prefix) array.
 class LCPInterval {
@@ -131,7 +131,7 @@ private:
     void leftExpandRareMatchMap(RareMatchMap& rare_match_map);
 
     // Expands match positions to the left and returns the number of expanded positions.
-    uint_t leftExpand(std::vector<uint_t>& match_pos);
+    uint_t leftExpand(std::vector<uint_t>& match_pos, uint_t match_length);
 
     // Converts the rare match map to pairs for further processing.
     static RareMatchPairs convertMapToPairs(const RareMatchMap& rare_match_map);

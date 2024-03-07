@@ -18,3 +18,39 @@
  // Contact: pingluzhang@outlook.com
  // Created: 2024-02-29
 #pragma once
+#include "config.h"
+#include "logging.h"
+#include "utils.h"
+#include "anchor.h"
+#include <seqan/align_parallel.h>
+
+
+using TSequence = seqan2::String<seqan2::Dna>;
+using TAlignedSequence = seqan2::Gaps<TSequence>;
+using TThreadModel = seqan2::Parallel;
+using TVectorSpec = seqan2::Vectorial;
+using TExecPolicy = seqan2::ExecutionPolicy<TThreadModel, TVectorSpec>;
+
+class PairAligner {
+private:
+	int_t match;
+	int_t mismatch;
+	int_t gap_open;
+	int_t gap_extension;
+	
+	bool use_parallel;
+
+	seqan2::Score<int16_t, seqan2::Simple> score_affine;
+	TExecPolicy exec_policy;
+
+	void alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align);
+
+public:
+	explicit PairAligner(int_t match, int_t mismatch, int_t gap_open, int_t gap_extension, bool use_parallel);
+
+	void alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors = {});
+
+	void alignPairSeq(const std::vector<SequenceInfo>& data) {
+		alignPairSeq(data, {}); // Calling the first method with default second argument
+	}
+};

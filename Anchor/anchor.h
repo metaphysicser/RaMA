@@ -47,6 +47,8 @@ static __inline unsigned long CTZ(unsigned long mask) {
 using Interval = std::pair<uint_t, uint_t>; // <start_pos, length>
 using Intervals = std::vector<std::pair<Interval, Interval>>;
 
+void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename); 
+
 struct Anchor {
     uint_t depth;
     Anchor* parent;
@@ -172,11 +174,6 @@ private:
     // Locates anchors using a given thread pool, recursive depth, and intervals
     void locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, Anchor* root, Interval first_interval, Interval second_interval);
 
-    // Converts RareMatchPairs to Intervals considering specified intervals
-    static Intervals RareMatchPairs2Intervals(const RareMatchPairs& rare_match_pairs, Interval first_interval, Interval second_interval, uint_t fst_length);
-
-    // Converts a global index to a local index relative to concatenated sequences
-    static uint_t indexFromGlogalToLocal(uint_t index, uint_t fst_length);
 
 public:
     // Constructor initializes AnchorFinder with sequence data and optional parallel processing
@@ -187,4 +184,10 @@ public:
 
     // Launches the anchor searching process
     RareMatchPairs lanuchAnchorSearching();
+
+    // Converts RareMatchPairs to Intervals considering specified intervals
+    static Intervals RareMatchPairs2Intervals(const RareMatchPairs& rare_match_pairs, Interval first_interval, Interval second_interval, uint_t fst_length);
+
+    // Converts a global index to a local index relative to concatenated sequences
+    static uint_t indexFromGlogalToLocal(uint_t index, uint_t fst_length);
 };

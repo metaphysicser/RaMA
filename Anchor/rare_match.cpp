@@ -20,7 +20,7 @@
 #include "rare_match.h"
 
 // Function to save RareMatchPairs to a CSV file.
-void saveRareMatchPairsToCSV(const RareMatchPairs& pairs, const std::string& filename) {
+void saveRareMatchPairsToCSV(const RareMatchPairs& pairs, const std::string& filename, uint_t fst_len) {
     std::ofstream file(filename); // Opens the file for writing.
     if (!file.is_open()) { // Checks if the file is successfully opened.
         logger.error() << "Failed to open file: " << filename << std::endl; // Logs error if file cannot be opened.
@@ -36,7 +36,7 @@ void saveRareMatchPairsToCSV(const RareMatchPairs& pairs, const std::string& fil
         // Writes the index and details of the current pair to the file.
         file << i + 1 << ","
             << pair.first_pos << ","
-            << pair.second_pos << ","
+            << pair.second_pos - fst_len - 1 << ","
             << pair.match_length << ","
             << pair.weight << "\n";
     }
@@ -199,17 +199,19 @@ void RareMatchFinder::getMatchPosAndType(std::pair<uint_t, uint_t> boundary, std
 void RareMatchFinder::leftExpandRareMatchMap(RareMatchMap& rare_match_map) {
     for (auto& pair : rare_match_map) {
         RareMatch& rare_match = pair.second;
-        rare_match.match_length += leftExpand(rare_match.match_pos);
+        rare_match.match_length += leftExpand(rare_match.match_pos, rare_match.match_length);
     }
 }
 
-uint_t RareMatchFinder::leftExpand(std::vector<uint_t>& match_pos) {
+uint_t RareMatchFinder::leftExpand(std::vector<uint_t>& match_pos, uint_t match_length) {
     if (match_pos.empty()) return 0; // Guard against empty input.
+
+    uint_t max_expand_length = min_seq_len - match_length;
 
     uint_t expand_length = 0;
     bool all_char_same = true;
 
-    while (true) {
+    while (expand_length < max_expand_length) {
         expand_length++; // Move increment here to ensure correct initial value usage.
         if (match_pos[0] < expand_length) {
             all_char_same = false;

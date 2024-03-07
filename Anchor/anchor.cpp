@@ -20,6 +20,34 @@
 
 #include "anchor.h"
 
+void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename) {
+    std::ofstream file(filename); // Opens the file for writing.
+    if (!file.is_open()) { // Checks if the file is successfully opened.
+        // Replace logger.error() with your logging mechanism or standard error output
+        std::cerr << "Failed to open file: " << filename << std::endl; // Logs error if file cannot be opened.
+        return; // Exits the function if file cannot be opened.
+    }
+
+    // Writes the header row of the CSV file.
+    file << "Index,FirstStart,FirstLength,SecondStart,SecondLength\n";
+
+    // Iterates through each pair in the Intervals and writes its data to the CSV file.
+    for (size_t i = 0; i < intervals.size(); ++i) {
+        const auto& intervalPair = intervals[i]; // References the current interval pair.
+        const auto& firstInterval = intervalPair.first; // References the first interval in the pair.
+        const auto& secondInterval = intervalPair.second; // References the second interval in the pair.
+
+        // Writes the index and details of the current interval pair to the file.
+        file << i + 1 << ","
+            << firstInterval.first << "," // First interval's start position
+            << firstInterval.second << "," // First interval's length
+            << secondInterval.first << "," // Second interval's start position
+            << secondInterval.second << "\n"; // Second interval's length
+    }
+
+    file.close(); // Closes the file after writing.
+}
+
 void RMQ::buildST() {
     // Initialize the first level of the sparse table with minimum values within each block
     int_t cur = 0, id = 1;
@@ -514,10 +542,10 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
         locateAnchor(pool, depth, task_id, root, first_interval, second_interval); // Fallback to sequential search
     }
     RareMatchPairs first_anchors = root->rare_match_pairs;
-    saveRareMatchPairsToCSV(first_anchors, "/mnt/f/code/vs_code/RaMA/output/first_anchor.csv");
+    saveRareMatchPairsToCSV(first_anchors, "/mnt/f/code/vs_code/RaMA/output/first_anchor.csv", first_seq_len);
 
     RareMatchPairs final_anchors = root->mergeRareMatchPairs(); // Merge rare match pairs from the root anchor
-    saveRareMatchPairsToCSV(final_anchors, "/mnt/f/code/vs_code/RaMA/output/final_anchor.csv");
+    saveRareMatchPairsToCSV(final_anchors, "/mnt/f/code/vs_code/RaMA/output/final_anchor.csv", first_seq_len);
 
     delete root; // Clean up the root anchor
     logger.info() << "Finish searching anchors" << std::endl;
@@ -631,7 +659,7 @@ Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_matc
     uint_t seq1_length = first_interval.second;
     uint_t start2 = second_interval.first + fst_length + 1;
     uint_t seq2_length = second_interval.second;
-
+    uint_t i = 0;
     // Iterate over each rare match pair to calculate intervals.
     for (const auto& pair : rare_match_pairs) {
         // Calculate the start and end positions for each match in both sequences.
@@ -662,10 +690,10 @@ Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_matc
         
     if (start2 >= fst_length + 1 + seq2_length) {
         start2--;
-        end2 = { start2, 0 };
+        end2 = { indexFromGlogalToLocal(start2, fst_length), 0 };
     }
     else {
-        end2 = { start2, fst_length + 1 + seq2_length - start2 };
+        end2 = { indexFromGlogalToLocal(start2, fst_length), fst_length + 1 + seq2_length - start2 };
     }
         
     intervals.push_back({ end1, end2 });

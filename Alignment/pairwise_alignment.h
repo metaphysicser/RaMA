@@ -44,7 +44,7 @@ private:
 
 	wavefront_aligner_attr_t attributes;
 
-	void alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align);
+	cigar alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align);
 
 
 public:

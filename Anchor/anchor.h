@@ -174,6 +174,8 @@ private:
     // Locates anchors using a given thread pool, recursive depth, and intervals
     void locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, Anchor* root, Interval first_interval, Interval second_interval);
 
+    RareMatchPairs verifyAnchors(const RareMatchPairs& rare_match_pairs);
+
 
 public:
     // Constructor initializes AnchorFinder with sequence data and optional parallel processing

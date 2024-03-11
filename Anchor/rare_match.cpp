@@ -121,10 +121,31 @@ std::pair<uint_t, uint_t> LCPInterval::getboundary() const {
 }
 
 
-RareMatchFinder::RareMatchFinder(unsigned char* _concat_data, std::vector<uint_t>& _SA, std::vector<int_t>& _LCP, std::vector<int_da>& _DA, uint_t _first_seq_len, uint_t _second_seq_len) :
-    concat_data(_concat_data), SA(_SA), LCP(_LCP), DA(_DA), first_seq_len(_first_seq_len), second_seq_len(_second_seq_len) {
+RareMatchFinder::RareMatchFinder(unsigned char* _concat_data, std::vector<uint_t>& _SA, std::vector<int_t>& _LCP, std::vector<int_da>& _DA, 
+    uint_t _first_seq_start, uint_t _first_seq_len, uint_t _second_seq_start, uint_t _second_seq_len):
+concat_data(_concat_data), 
+SA(_SA), 
+LCP(_LCP), 
+DA(_DA), 
+first_seq_start(_first_seq_start), 
+first_seq_len(_first_seq_len), 
+second_seq_start(_second_seq_start), 
+second_seq_len(_second_seq_len) {
     min_seq_len = getMinValue(first_seq_len, second_seq_len);
     concat_seq_len = SA.size();
+}
+
+uint_t RareMatchFinder::getMinMatchLength(std::vector<uint_t>& match_pos) {
+    uint_t min_match_length = U_MAX;
+    for (auto& pos : match_pos) {
+        if (pos >= second_seq_start) {
+            min_match_length = getMinValue(min_match_length, second_seq_start+second_seq_len-pos);
+        }
+        else {
+            min_match_length = getMinValue(min_match_length, first_seq_start + first_seq_len - pos);
+        }
+    }
+    return min_match_length;
 }
 
 // Finds rare matches up to a specified maximum count within the LCP array.
@@ -142,14 +163,16 @@ RareMatchPairs RareMatchFinder::findRareMatch(uint_t max_match_count) {
         // Process the LCP interval to find rare matches.
         while (!lcp_interval.isRightAtEnd()) {
             if (lcp_interval.isRareInterval()) { // Check for rare interval condition.
-                // Calculate match length and get boundary for the current interval.
-                uint_t match_length = getMinValue((uint_t)lcp_interval.getMinLCP(), min_seq_len);
+         
                 std::pair<uint_t, uint_t> boundary = lcp_interval.getboundary();
 
                 // Get match positions and types.
                 std::vector<uint_t> match_pos;
                 std::vector<bool> pos_type;
                 getMatchPosAndType(boundary, match_pos, pos_type);
+
+                // Calculate match length and get boundary for the current interval.
+                uint_t match_length = getMinValue((uint_t)lcp_interval.getMinLCP(), getMinMatchLength(match_pos));
 
                 // Convert match positions to RareMatch object and check counts.
                 RareMatch rare_match(match_length, match_pos, pos_type);
@@ -206,7 +229,18 @@ void RareMatchFinder::leftExpandRareMatchMap(RareMatchMap& rare_match_map) {
 uint_t RareMatchFinder::leftExpand(std::vector<uint_t>& match_pos, uint_t match_length) {
     if (match_pos.empty()) return 0; // Guard against empty input.
 
-    uint_t max_expand_length = min_seq_len - match_length;
+    uint_t max_expand_length = U_MAX;
+
+    for (auto& pos : match_pos) {
+        if (pos >= second_seq_start) {
+            max_expand_length = getMinValue(max_expand_length, pos - second_seq_start);
+        }
+        else {
+            max_expand_length = getMinValue(max_expand_length, pos - first_seq_start);
+        }
+        
+    }
+
 
     uint_t expand_length = 0;
     bool all_char_same = true;

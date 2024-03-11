@@ -70,6 +70,24 @@ struct RareMatchPair {
         }
         return second_pos < other.second_pos;
     }
+
+    // Helper function to check if two RareMatchPairs are seamlessly adjacent
+    bool isAdjacent(const RareMatchPair& next) const {
+        return (first_pos + match_length == next.first_pos) &&
+            (second_pos + match_length == next.second_pos);
+    }
+
+    // Helper function to check overlap
+    bool hasOverlap(const RareMatchPair& next) const {
+        return (first_pos + match_length > next.first_pos) ||
+            (second_pos + match_length > next.second_pos);
+    }
+
+    // Helper function to merge two RareMatchPairs
+    void mergeWith(const RareMatchPair& next) {
+        // Assuming the match_length is the only attribute that needs to be updated
+        match_length += next.match_length;
+    }
 };
 
 // Alias for a vector of RareMatchPair objects.
@@ -119,8 +137,12 @@ private:
     std::vector<int_t> LCP; // Longest Common Prefix array.
     std::vector<int_da> DA; // Document Array indicating sequence origin.
 
+    uint_t first_seq_start;
     uint_t first_seq_len; // Length of the first sequence.
+
+    uint_t second_seq_start;
     uint_t second_seq_len; // Length of the second sequence.
+
     uint_t min_seq_len; // Minimum length of the two sequences.
     uint_t concat_seq_len; // Total length of the concatenated sequence.
 
@@ -139,9 +161,11 @@ private:
     // Finds optimal pairs from given rare match pairs based on specific criteria.
     RareMatchPairs findOptimalPairs(const RareMatchPairs& rare_match_pairs);
 
+    uint_t getMinMatchLength(std::vector<uint_t>& match_pos);
+
 public:
     // Constructor initializes the finder with concatenated data and associated arrays.
-    explicit RareMatchFinder(unsigned char* _concat_data, std::vector<uint_t>& _SA, std::vector<int_t>& _LCP, std::vector<int_da>& _DA, uint_t _first_seq_len, uint_t _second_seq_len);
+    explicit RareMatchFinder(unsigned char* _concat_data, std::vector<uint_t>& _SA, std::vector<int_t>& _LCP, std::vector<int_da>& _DA, uint_t _first_seq_start, uint_t _first_seq_len, uint_t _second_seq_start, uint_t _second_seq_len);
 
     // Finds rare matches up to a specified maximum count.
     RareMatchPairs findRareMatch(uint_t max_match_count = 100);

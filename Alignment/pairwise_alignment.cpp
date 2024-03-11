@@ -49,12 +49,12 @@ void PairAligner::alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchP
 	uint_t fst_length = data[0].seq_len;
 	Intervals intervals_need_align = AnchorFinder::RareMatchPairs2Intervals(anchors, first_interval, second_interval, fst_length);
 	saveIntervalsToCSV(intervals_need_align, "/mnt/f/code/vs_code/RaMA/output/intervals_need_align.csv");
-	alignIntervals(data, intervals_need_align);
+	cigar final_cigar = alignIntervals(data, intervals_need_align);
 	return;
 }
 
 
-void PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align) {
+cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align) {
 	cigars aligned_interval_cigar(intervals_need_align.size());
 	
 	std::vector<uint_t> aligned_intervals_index;
@@ -63,7 +63,10 @@ void PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const In
 	for (uint_t i = 0; i < intervals_need_align.size(); ++i) {
 		std::pair<Interval, Interval> tmp_interval_pairs = intervals_need_align[i];
 		uint_t fst_len = tmp_interval_pairs.first.second;
-		uint_t scd_len = tmp_interval_pairs.second.second;;
+		uint_t scd_len = tmp_interval_pairs.second.second;
+		std::string seq1 = data[0].sequence.substr(tmp_interval_pairs.first.first, tmp_interval_pairs.first.second);
+		std::string seq2 = data[1].sequence.substr(tmp_interval_pairs.second.first, tmp_interval_pairs.second.second);
+
 		if (fst_len == 0) { 
 			// Insert
 			aligned_interval_cigar[i] = cigar(1, cigarToInt('I', scd_len));
@@ -76,16 +79,82 @@ void PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const In
 		}
 		// todo：这里的参数设置可以根据罚分调整
 		if (fst_len <= 5 && scd_len > 100) {
-			aligned_interval_cigar[i] = cigar(1, cigarToInt('M', fst_len));
-			aligned_interval_cigar[i].emplace_back(cigarToInt('D', scd_len - fst_len));
+			cigar tmp_cigar;
+			uint_t cigar_len = 1; 
+			char cur_state = (seq1[0] == seq2[0]) ? '=' : 'X'; 
+
+			for (uint_t i = 1; i < fst_len; ++i) { 
+				if (seq1[i] == seq2[i]) {
+					if (cur_state == '=') {
+						++cigar_len;
+					}
+					else {
+						tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+						cur_state = '=';
+						cigar_len = 1;
+					}
+				}
+				else {
+					if (cur_state == 'X') {
+						++cigar_len;
+					}
+					else {
+						tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+						cur_state = 'X';
+						cigar_len = 1;
+					}
+				}
+			}
+
+			tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+
+			if (scd_len > fst_len) {
+				tmp_cigar.emplace_back(cigarToInt('D', scd_len - fst_len));
+			}
+
+			aligned_interval_cigar[i] = tmp_cigar;
 			continue;
 		}
 
+
 		if (scd_len <= 5 && fst_len > 100) {
-			aligned_interval_cigar[i] = cigar(1, cigarToInt('M', scd_len));
-			aligned_interval_cigar[i].emplace_back(cigarToInt('I', fst_len - scd_len));
+			cigar tmp_cigar;
+			uint_t cigar_len = 1;
+			char cur_state = (seq1[0] == seq2[0]) ? '=' : 'X'; 
+
+			for (uint_t i = 1; i < scd_len; ++i) { 
+				if (seq1[i] == seq2[i]) {
+					if (cur_state == '=') {
+						++cigar_len;
+					}
+					else {
+						tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+						cur_state = '=';
+						cigar_len = 1;
+					}
+				}
+				else {
+					if (cur_state == 'X') {
+						++cigar_len;
+					}
+					else {
+						tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+						cur_state = 'X';
+						cigar_len = 1;
+					}
+				}
+			}
+
+			tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+
+			if (fst_len > scd_len) {
+				tmp_cigar.emplace_back(cigarToInt('I', fst_len - scd_len));
+			}
+
+			aligned_interval_cigar[i] = tmp_cigar;
 			continue;
 		}
+
 		
 
 		aligned_intervals_index.emplace_back(i);
@@ -99,32 +168,55 @@ void PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const In
 		std::pair<Interval, Interval> tmp_interval_pairs = intervals_need_align[index];
 		std::string seq1 = data[0].sequence.substr(tmp_interval_pairs.first.first, tmp_interval_pairs.first.second);
 		std::string seq2 = data[1].sequence.substr(tmp_interval_pairs.second.first, tmp_interval_pairs.second.second);
-		pool.enqueue([this, &seq1, &seq2, &aligned_interval_cigar, index]() {
+		if (use_parallel) {
+			pool.enqueue([this, seq1, seq2, &aligned_interval_cigar, index]() {
 			wavefront_aligner_t* const wf_aligner = wavefront_aligner_new(&attributes);
 			const char* pattern = seq1.c_str();
 			const char* text = seq2.c_str();
 			wavefront_align(wf_aligner, pattern, strlen(pattern), text, strlen(text)); // Align
 			uint32_t* cigar_buffer;
 			int cigar_length;
-			cigar_get_CIGAR(wf_aligner->cigar, false, &cigar_buffer, &cigar_length);
+			cigar_get_CIGAR(wf_aligner->cigar, true, &cigar_buffer, &cigar_length);
 			aligned_interval_cigar[index] = convertToCigarVector(cigar_buffer, cigar_length);
-			wavefront_aligner_delete(wf_aligner); // Free
+			wavefront_aligner_delete(wf_aligner); // Free	
 			});
+		} else {
+			wavefront_aligner_t* const wf_aligner = wavefront_aligner_new(&attributes);
+			const char* pattern = seq1.c_str();
+			const char* text = seq2.c_str();
+			wavefront_align(wf_aligner, pattern, strlen(pattern), text, strlen(text)); // Align
+			uint32_t* cigar_buffer;
+			int cigar_length;
+			cigar_get_CIGAR(wf_aligner->cigar, true, &cigar_buffer, &cigar_length);
+			aligned_interval_cigar[index] = convertToCigarVector(cigar_buffer, cigar_length);
+			wavefront_aligner_delete(wf_aligner); // Free			
+		}
+		
 	}	
-
-	pool.waitAllTasksDone(); // Wait for all tasks to complete
+	if(use_parallel)
+		pool.waitAllTasksDone(); // Wait for all tasks to complete
 
 	for (uint_t i = 0; i < aligned_interval_cigar.size(); i++) {
-		logger.info() << "CIGAR: " << i  << "\n";
+		std::pair<Interval, Interval> tmp_interval_pairs = intervals_need_align[i];
+		std::string seq1 = data[0].sequence.substr(tmp_interval_pairs.first.first, tmp_interval_pairs.first.second);
+		std::string seq2 = data[1].sequence.substr(tmp_interval_pairs.second.first, tmp_interval_pairs.second.second);
+		logger.debug() << "CIGAR: " << i+1  << "\n";
+		logger.debug() << "\n" << seq1 << "\n" << seq2 << "\n";
 		for (uint_t j = 0; j < aligned_interval_cigar[i].size(); j++) {
 			char operation;
 			uint32_t len;
 			intToCigar(aligned_interval_cigar[i][j], operation, len);
-			logger.info() << operation << len << "\n";
+			logger.debug() << operation << len << "\n";
 		}
 	}
 
-	return;
+	cigar final_cigar;
+	for (const auto& single_cigar : aligned_interval_cigar) {
+		for (const auto& unit : single_cigar) {
+			final_cigar.push_back(unit);
+		}
+	}
+	return final_cigar;
 }
 
 

@@ -544,13 +544,14 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
     RareMatchPairs first_anchors = root->rare_match_pairs;
     saveRareMatchPairsToCSV(first_anchors, "/mnt/f/code/vs_code/RaMA/output/first_anchor.csv", first_seq_len);
 
-    RareMatchPairs final_anchors = root->mergeRareMatchPairs(); // Merge rare match pairs from the root anchor
+    RareMatchPairs final_anchors = verifyAnchors(root->mergeRareMatchPairs()); // Merge rare match pairs from the root anchor
     saveRareMatchPairsToCSV(final_anchors, "/mnt/f/code/vs_code/RaMA/output/final_anchor.csv", first_seq_len);
 
     delete root; // Clean up the root anchor
     logger.info() << "Finish searching anchors" << std::endl;
 
     return final_anchors;
+    // return final_anchors;
 }
 
 // Launches the process of locating anchors within given intervals of two sequences.
@@ -614,7 +615,7 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
     }
 
     // Initialize RareMatchFinder and find optimal rare match pairs.
-    RareMatchFinder rare_match_finder(concat_data, new_SA, new_LCP, new_DA, fst_len, scd_len);
+    RareMatchFinder rare_match_finder(concat_data, new_SA, new_LCP, new_DA, first_seq_start, fst_len, second_seq_start,scd_len);
     RareMatchPairs optimal_pairs = rare_match_finder.findRareMatch(100);
 
     // Convert rare match pairs to intervals for further exploration.
@@ -673,6 +674,9 @@ Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_matc
         if (start1 <= match_start1 && start2 <= match_start2) {
             intervals.push_back({ {start1, match_start1 - start1}, {indexFromGlogalToLocal(start2, fst_length), match_start2 - start2} });
         }
+        else {
+            logger.error() << "There is conflict in final anchors" << std::endl;
+        }
 
         start1 = match_end1 + 1;
         start2 = match_end2 + 1;
@@ -705,4 +709,34 @@ Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_matc
 uint_t AnchorFinder::indexFromGlogalToLocal(uint_t index, uint_t fst_length) {
     // Adjust index if it belongs to the second sequence.
     return index > fst_length ? index - fst_length - 1 : index;
+}
+
+RareMatchPairs AnchorFinder::verifyAnchors(const RareMatchPairs& rare_match_pairs) {
+    if (rare_match_pairs.empty()) return rare_match_pairs;
+
+    // Sort the input vector (if not already sorted)
+    RareMatchPairs sorted_pairs(rare_match_pairs);
+    std::sort(sorted_pairs.begin(), sorted_pairs.end());
+
+    RareMatchPairs verified;
+    RareMatchPair current = sorted_pairs[0];
+
+    for (size_t i = 1; i < sorted_pairs.size(); ++i) {
+        if (current.hasOverlap(sorted_pairs[i])) {
+            logger.error() << "Error: Overlapping RareMatchPairs detected.\n";
+            exit(EXIT_FAILURE);
+        }
+        else if (current.isAdjacent(sorted_pairs[i])) {
+            current.mergeWith(sorted_pairs[i]);
+        }
+        else {
+            verified.push_back(current);
+            current = sorted_pairs[i];
+        }
+    }
+
+    // add the last processed RareMatchPair
+    verified.push_back(current);
+
+    return verified;
 }

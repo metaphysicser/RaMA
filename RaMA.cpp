@@ -27,7 +27,7 @@ extern "C" {
 #include "wavefront/wavefront_align.h"
 }
 #include "Alignment/WFA2-lib/bindings/cpp/WFAligner.hpp"
-Logger logger("/mnt/f/code/vs_code/RaMA/output/", "RaMA", true, info);
+Logger logger("/mnt/f/code/vs_code/RaMA/output/", "RaMA", true, debug);
 
 int main(int argc, char** argv) {
 	std::ios::sync_with_stdio(false);

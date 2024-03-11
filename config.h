@@ -23,6 +23,7 @@
 #include <vector>
 #include <iostream>
 #include <cassert>
+#include <sstream>
 
 #ifndef DEBUG
 #define DEBUG 0

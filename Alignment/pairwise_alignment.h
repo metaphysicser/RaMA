@@ -22,35 +22,43 @@
 #include "logging.h"
 #include "utils.h"
 #include "anchor.h"
-#include <seqan/align_parallel.h>
+extern "C" {
+#include "wavefront/wavefront_align.h"
+}
+#include "Alignment/WFA2-lib/bindings/cpp/WFAligner.hpp"
 
-
-using TSequence = seqan2::String<seqan2::Dna>;
-using TAlignedSequence = seqan2::Gaps<TSequence>;
-using TThreadModel = seqan2::Parallel;
-using TVectorSpec = seqan2::Vectorial;
-using TExecPolicy = seqan2::ExecutionPolicy<TThreadModel, TVectorSpec>;
+using cigarunit = uint32_t;
+using cigar = std::vector<cigarunit>;
+using cigars = std::vector<cigar>;
 
 class PairAligner {
 private:
 	int_t match;
 	int_t mismatch;
-	int_t gap_open;
-	int_t gap_extension;
-	
+	int_t gap_open1;
+	int_t gap_extension1;
+	int_t gap_open2;
+	int_t gap_extension2;
+
 	bool use_parallel;
 
-	seqan2::Score<int16_t, seqan2::Simple> score_affine;
-	TExecPolicy exec_policy;
+	wavefront_aligner_attr_t attributes;
 
 	void alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align);
 
+
 public:
-	explicit PairAligner(int_t match, int_t mismatch, int_t gap_open, int_t gap_extension, bool use_parallel);
+	explicit PairAligner(int_t match = 0, int_t mismatch = 3, int_t gap_open1 = 4, int_t gap_extension1 = 2, int_t gap_open2 = 12, int_t gap_extension2 = 1, bool use_parallel = true);
 
 	void alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors = {});
 
 	void alignPairSeq(const std::vector<SequenceInfo>& data) {
 		alignPairSeq(data, {}); // Calling the first method with default second argument
 	}
+
+	static uint32_t cigarToInt(char operation, uint32_t len);
+
+	static void intToCigar(uint32_t cigar, char& operation, uint32_t& len);
+
+	static cigar convertToCigarVector(uint32_t* cigar_buffer, int cigar_length);
 };

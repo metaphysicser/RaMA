@@ -96,7 +96,7 @@ private:
     std::vector<uint_t> pow, log; // Power and logarithm tables for fast computations
     std::vector<uint_t> pre, sub; // Precomputed values for block and sub-block queries
     std::vector<uint_t> belong, pos; // Auxiliary vectors for block decomposition
-    std::vector<uint_t> f; // Auxiliary vector for queries
+    std::vector<uint64_t> f; // Auxiliary vector for queries
 
     // Builds the sparse table for RMQ
     void buildST();

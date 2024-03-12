@@ -44,7 +44,13 @@ private:
 
 	wavefront_aligner_attr_t attributes;
 
-	cigar alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align);
+	cigar alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align, const RareMatchPairs& anchors);
+
+	void cigarToAlignment(cigar final_ciagr, const std::vector<SequenceInfo>& data);
+
+	void verifyCigar(const cigar& final_cigar, const std::vector<SequenceInfo>& data);
+
+	void saveCigarToTxt(const cigar& final_cigar, const std::string& filename);
 
 
 public:

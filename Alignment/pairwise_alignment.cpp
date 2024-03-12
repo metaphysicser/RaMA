@@ -49,12 +49,14 @@ void PairAligner::alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchP
 	uint_t fst_length = data[0].seq_len;
 	Intervals intervals_need_align = AnchorFinder::RareMatchPairs2Intervals(anchors, first_interval, second_interval, fst_length);
 	saveIntervalsToCSV(intervals_need_align, "/mnt/f/code/vs_code/RaMA/output/intervals_need_align.csv");
-	cigar final_cigar = alignIntervals(data, intervals_need_align);
+	cigar final_cigar = alignIntervals(data, intervals_need_align, anchors);
+	saveCigarToTxt(final_cigar, "/mnt/f/code/vs_code/RaMA/output/final_cigar.txt");
+	verifyCigar(final_cigar, data);
 	return;
 }
 
 
-cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align) {
+cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align, const RareMatchPairs& anchors) {
 	cigars aligned_interval_cigar(intervals_need_align.size());
 	
 	std::vector<uint_t> aligned_intervals_index;
@@ -211,9 +213,14 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 	}
 
 	cigar final_cigar;
+	auto anchor_cigar = anchors.begin();
 	for (const auto& single_cigar : aligned_interval_cigar) {
 		for (const auto& unit : single_cigar) {
 			final_cigar.push_back(unit);
+		}
+		if (anchor_cigar != anchors.end()) {
+			final_cigar.push_back(cigarToInt('=', anchor_cigar->match_length));
+			anchor_cigar++;
 		}
 	}
 	return final_cigar;
@@ -260,5 +267,91 @@ void PairAligner::intToCigar(uint32_t cigar, char& operation, uint32_t& len) {
 	default: operation = '?'; break; // Unknown operation
 	}
 }
+
+void PairAligner::verifyCigar(const cigar& final_cigar, const std::vector<SequenceInfo>& data) {
+	if (data.size() < 2) {
+		logger.error() << "Error: Not enough sequences provided for verification.\n";
+		return;
+	}
+
+	const std::string& pattern = data[0].sequence;
+	const std::string& text = data[1].sequence;
+	int pattern_pos = 0, text_pos = 0;
+
+	for (const auto& unit : final_cigar) {
+		char operation;
+		uint_t len;
+		intToCigar(unit, operation, len); // Convert each cigar unit back to operation and length
+
+		switch (operation) {
+		case '=': // Sequence match
+			for (uint_t i = 0; i < len; ++i) {
+				if (pattern[pattern_pos + i] != text[text_pos + i]) {
+					logger.error() << "Mismatch found where exact match expected at pattern position "
+						<< pattern_pos + i << " and text position " << text_pos + i << std::endl;
+					return;
+				}
+			}
+			pattern_pos += len;
+			text_pos += len;
+			break;
+		case 'X': // Mismatch
+			for (uint_t i = 0; i < len; ++i) {
+				if (pattern[pattern_pos + i] == text[text_pos + i]) {
+					std::cerr << "Exact match found where mismatch expected at pattern position "
+						<< pattern_pos + i << " and text position " << text_pos + i << std::endl;
+					return;
+				}
+			}
+			pattern_pos += len;
+			text_pos += len;
+			break;
+		case 'M': // Generic match/mismatch
+			pattern_pos += len;
+			text_pos += len;
+			break;
+		case 'I': // Insertion
+			text_pos += len;
+			break;
+		case 'D': // Deletion
+			pattern_pos += len;
+			break;
+		default:
+			std::cerr << "Unknown CIGAR operation '" << operation << "' encountered.\n";
+			return;
+		}
+	}
+
+	// Check if the end positions match the sequence lengths
+	if (pattern_pos != data[0].seq_len || text_pos != data[1].seq_len) {
+		logger.error() << "CIGAR does not fully align sequences. Pattern aligned length: " << pattern_pos
+			<< ", Text aligned length: " << text_pos << std::endl;
+	}
+	else {
+		logger.info() << "CIGAR verification successful.\n";
+	}
+}
+
+void PairAligner::saveCigarToTxt(const cigar& final_cigar, const std::string& filename) {
+	std::ofstream outFile(filename);
+	if (!outFile.is_open()) {
+		logger.error() << "Error: Unable to open file " << filename << " for writing.\n";
+		return;
+	}
+
+	for (const auto& unit : final_cigar) {
+		char operation;
+		uint32_t len;
+		intToCigar(unit, operation, len);
+
+		outFile << len << operation;
+	}
+
+	outFile << std::endl;
+	outFile.close();
+
+	logger.info() << "CIGAR has been saved to " << filename << std::endl;
+}
+
 
 

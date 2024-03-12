@@ -129,15 +129,16 @@ void RMQ::buildSubPreParallel() {
 void RMQ::buildBlock() {
     int_t top = 0; // Stack pointer
     std::vector<int_t> s(block_size + 1, 0); // Monotone stack
+    uint64_t bit = 1;
     for (uint_t i = 1; i <= N; ++i) {
         // Reset stack for each new block
         if (pos[i] == 0) top = 0;
         else f[i] = f[i - 1];
         // Maintain monotonicity of the stack
         while (top > 0 && LCP[s[top] - 1] >= LCP[i - 1])
-            f[i] &= ~(1 << pos[s[top--]]); // Use bit manipulation to update f
+            f[i] &= ~(bit << pos[s[top--]]); // Use bit manipulation to update f
         s[++top] = i; // Push current index onto stack
-        f[i] |= (1 << pos[i]); // Set bit corresponding to current position
+        f[i] |= (bit << pos[i]); // Set bit corresponding to current position
     }
 }
 
@@ -182,7 +183,7 @@ RMQ::RMQ(int_t* a, uint_t n, bool use_parallel) {
     f.resize(N + 1, 0);
 
     // Calculate block size and number of blocks based on input size
-    block_size = sqrt(N) * 1.5;
+    block_size = getMinValue((int)(log2(N) * 1.5), 63);
     block_num = (N + block_size - 1) / block_size;
 
     // Initialize 'pow' and 'log' arrays for fast range queries
@@ -224,6 +225,12 @@ int_t RMQ::queryMin(uint_t l, uint_t r) const {
         return getMinValue(ans1, ans2); // Return the overall minimum
     }
     else { // If l and r are in the same block
+        uint_t t1 = f[r];
+        uint_t t = pos[l];
+        uint_t t2 = f[r] >> pos[l];
+        uint_t lowestBit = t2 & 1;
+        uint_t lowestBit2 = t2 & 2;
+        uint_t t3 = CTZ(f[r] >> pos[l]);
         return LCP[l + CTZ(f[r] >> pos[l]) - 1]; // Directly query within the block
     }
 }
@@ -322,6 +329,7 @@ AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel, s
         exit(EXIT_FAILURE);
     }
 
+
     ensureDirExists(save_file_path);
     std::string save_file_name = joinPaths(save_file_path, ANCHORFINDER_NAME);
 
@@ -340,6 +348,8 @@ AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel, s
         logger.info() << "The sparse table is constructing..." << std::endl;
         this->rmq = RMQ(LCP, concat_data_length, use_parallel);
         logger.info() << "The sparse table construction is finished!" << std::endl;
+
+        uint_t r = rmq.queryMin(5358, 5370);
 
         if (use_parallel)
             constructISAParallel();
@@ -544,7 +554,8 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
     RareMatchPairs first_anchors = root->rare_match_pairs;
     saveRareMatchPairsToCSV(first_anchors, "/mnt/f/code/vs_code/RaMA/output/first_anchor.csv", first_seq_len);
 
-    RareMatchPairs final_anchors = verifyAnchors(root->mergeRareMatchPairs()); // Merge rare match pairs from the root anchor
+    RareMatchPairs final_anchors = root->mergeRareMatchPairs(); // Merge rare match pairs from the root anchor
+    // RareMatchPairs final_anchors = verifyAnchors(root->mergeRareMatchPairs()); // Merge rare match pairs from the root anchor
     saveRareMatchPairsToCSV(final_anchors, "/mnt/f/code/vs_code/RaMA/output/final_anchor.csv", first_seq_len);
 
     delete root; // Clean up the root anchor

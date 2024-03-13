@@ -139,7 +139,7 @@ uint_t RareMatchFinder::getMinMatchLength(std::vector<uint_t>& match_pos) {
     uint_t min_match_length = U_MAX;
     for (auto& pos : match_pos) {
         if (pos >= second_seq_start) {
-            min_match_length = getMinValue(min_match_length, second_seq_start+second_seq_len-pos);
+            min_match_length = getMinValue(min_match_length, second_seq_start + second_seq_len - pos);
         }
         else {
             min_match_length = getMinValue(min_match_length, first_seq_start + first_seq_len - pos);

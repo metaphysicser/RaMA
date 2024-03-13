@@ -111,7 +111,7 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 			tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
 
 			if (scd_len > fst_len) {
-				tmp_cigar.emplace_back(cigarToInt('D', scd_len - fst_len));
+				tmp_cigar.emplace_back(cigarToInt('I', scd_len - fst_len));
 			}
 
 			aligned_interval_cigar[i] = tmp_cigar;
@@ -150,7 +150,7 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 			tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
 
 			if (fst_len > scd_len) {
-				tmp_cigar.emplace_back(cigarToInt('I', fst_len - scd_len));
+				tmp_cigar.emplace_back(cigarToInt('D', fst_len - scd_len));
 			}
 
 			aligned_interval_cigar[i] = tmp_cigar;
@@ -276,13 +276,12 @@ void PairAligner::verifyCigar(const cigar& final_cigar, const std::vector<Sequen
 
 	const std::string& pattern = data[0].sequence;
 	const std::string& text = data[1].sequence;
-	int pattern_pos = 0, text_pos = 0;
+	uint_t pattern_pos = 0, text_pos = 0;
 
 	for (const auto& unit : final_cigar) {
 		char operation;
 		uint_t len;
 		intToCigar(unit, operation, len); // Convert each cigar unit back to operation and length
-
 		switch (operation) {
 		case '=': // Sequence match
 			for (uint_t i = 0; i < len; ++i) {

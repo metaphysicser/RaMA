@@ -92,31 +92,34 @@ void RMQ::buildSubPreParallel() {
     // Parallel version of buildSubPre using a thread pool for concurrency
     ThreadPool pool(std::thread::hardware_concurrency());
 
-    // Parallel precomputation of minimum values for LCP within each block
-    for (uint_t i = 1; i <= N; i += block_size) {
-        pool.enqueue([this, i] {
-            uint_t end = getMinValue(i + block_size, N);
-            for (uint_t j = i; j <= end; ++j) {
-                if (belong[j] != belong[j - 1])
-                    pre[j] = LCP[j - 1];
+    for (uint_t block = 0; block < block_num; ++block) {
+        pool.enqueue([this, block]() {
+            uint_t start = block * block_size + 1;
+            uint_t end = std::min((block + 1) * block_size, N);
+
+            for (uint_t i = start; i <= end; ++i) {
+                if (i == start || belong[i] != belong[i - 1])
+                    pre[i] = LCP[i - 1];
                 else
-                    pre[j] = getMinValue(pre[j - 1], (uint_t)LCP[j - 1]);
+                    pre[i] = getMinValue(pre[i - 1], (uint_t)LCP[i - 1]);
             }
-        });
+
+            });
     }
 
-    // Similar parallel computation for sub values
-    for (uint_t i = 1; i <= N; i += block_size) {
-        pool.enqueue([this, i] {
-            uint_t start = i;
-            uint_t end = getMinValue(i + block_size, N);
-            for (uint_t j = end; j >= start; --j) {
-                if (j + 1 > end || belong[j] != belong[j + 1])
-                    sub[j] = LCP[j - 1];
+
+    for (uint_t block = 0; block < block_num; ++block) {
+        pool.enqueue([this, block]() {
+            uint_t start = block * block_size + 1;
+            uint_t end = std::min((block + 1) * block_size, N);
+
+            for (int_t i = static_cast<int_t>(end); i >= static_cast<int_t>(start); --i) {
+                if (i == static_cast<int_t>(end) || i + 1 > N || belong[i] != belong[i + 1])
+                    sub[i] = LCP[i - 1];
                 else
-                    sub[j] = getMinValue(sub[j + 1], (uint_t)LCP[j - 1]);
+                    sub[i] = getMinValue(sub[i + 1], (uint_t)LCP[i - 1]);
             }
-        });
+            });
     }
 
     pool.waitAllTasksDone();
@@ -153,16 +156,16 @@ void RMQ::buildBlockParallel() {
             uint_t end = getMinValue(start + block_size - 1, N); // Determine block end
             int_t top = 0; // Stack pointer
             std::vector<int_t> s(block_size + 1, 0); // Monotone stack
-
+            uint64_t bit = 1;
             for (uint_t i = start; i <= end; ++i) {
                 // Reset stack for each new block
                 if (pos[i] == 0) top = 0;
                 else f[i] = f[i - 1];
                 // Maintain monotonicity of the stack
                 while (top > 0 && LCP[s[top] - 1] >= LCP[i - 1])
-                    f[i] &= ~(1 << pos[s[top--]]); // Use bit manipulation to update f
+                    f[i] &= ~(bit << pos[s[top--]]); // Use bit manipulation to update f
                 s[++top] = i; // Push current index onto stack
-                f[i] |= (1 << pos[i]); // Set bit corresponding to current position
+                f[i] |= (bit << pos[i]); // Set bit corresponding to current position
             }
             });
     }
@@ -225,12 +228,6 @@ int_t RMQ::queryMin(uint_t l, uint_t r) const {
         return getMinValue(ans1, ans2); // Return the overall minimum
     }
     else { // If l and r are in the same block
-        uint_t t1 = f[r];
-        uint_t t = pos[l];
-        uint_t t2 = f[r] >> pos[l];
-        uint_t lowestBit = t2 & 1;
-        uint_t lowestBit2 = t2 & 2;
-        uint_t t3 = CTZ(f[r] >> pos[l]);
         return LCP[l + CTZ(f[r] >> pos[l]) - 1]; // Directly query within the block
     }
 }
@@ -348,8 +345,6 @@ AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel, s
         logger.info() << "The sparse table is constructing..." << std::endl;
         this->rmq = RMQ(LCP, concat_data_length, use_parallel);
         logger.info() << "The sparse table construction is finished!" << std::endl;
-
-        uint_t r = rmq.queryMin(5358, 5370);
 
         if (use_parallel)
             constructISAParallel();

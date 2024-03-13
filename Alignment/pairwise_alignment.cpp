@@ -198,47 +198,9 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 	if(use_parallel)
 		pool.waitAllTasksDone(); // Wait for all tasks to complete
 
-	for (uint_t i = 0; i < aligned_interval_cigar.size(); i++) {
-		std::pair<Interval, Interval> tmp_interval_pairs = intervals_need_align[i];
-		std::string seq1 = data[0].sequence.substr(tmp_interval_pairs.first.first, tmp_interval_pairs.first.second);
-		std::string seq2 = data[1].sequence.substr(tmp_interval_pairs.second.first, tmp_interval_pairs.second.second);
-		logger.debug() << "CIGAR: " << i+1  << "\n";
-		logger.debug() << "\n" << seq1 << "\n" << seq2 << "\n";
-		for (uint_t j = 0; j < aligned_interval_cigar[i].size(); j++) {
-			char operation;
-			uint32_t len;
-			intToCigar(aligned_interval_cigar[i][j], operation, len);
-			logger.debug() << operation << len << "\n";
-		}
-	}
+	printCigarDebug(data, aligned_interval_cigar, intervals_need_align);
 
-	cigar final_cigar;
-	auto anchor_cigar = anchors.begin();
-	for (const auto& single_cigar : aligned_interval_cigar) {
-		for (const auto& unit : single_cigar) {
-			final_cigar.push_back(unit);
-		}
-		if (anchor_cigar != anchors.end()) {
-			final_cigar.push_back(cigarToInt('=', anchor_cigar->match_length));
-			anchor_cigar++;
-		}
-	}
-
-	char operation;
-	uint_t len;
-
-	intToCigar(final_cigar.front(), operation, len);
-	if (len == 0) {
-		final_cigar.erase(final_cigar.begin());
-	}
-
-	if (!final_cigar.empty()) {
-		intToCigar(final_cigar.back(), operation, len);
-		if (len == 0) {
-			final_cigar.pop_back();
-		}
-	}
-	return final_cigar;
+	return combineCigarsWithAnchors(aligned_interval_cigar, anchors);
 }
 
 
@@ -366,6 +328,65 @@ void PairAligner::saveCigarToTxt(const cigar& final_cigar, const std::string& fi
 
 	logger.info() << "CIGAR has been saved to " << filename << std::endl;
 }
+
+void PairAligner::printCigarDebug(const std::vector<SequenceInfo>& data, const cigars& aligned_interval_cigar, const Intervals& intervals_need_align) {
+	for (uint_t i = 0; i < aligned_interval_cigar.size(); i++) {
+		std::pair<Interval, Interval> tmp_interval_pairs = intervals_need_align[i];
+		std::string seq1 = data[0].sequence.substr(tmp_interval_pairs.first.first, tmp_interval_pairs.first.second);
+		std::string seq2 = data[1].sequence.substr(tmp_interval_pairs.second.first, tmp_interval_pairs.second.second);
+		logger.debug() << "CIGAR: " << i + 1 << "\n";
+		logger.debug() << "\n" << seq1 << "\n" << seq2 << "\n";
+		for (uint_t j = 0; j < aligned_interval_cigar[i].size(); j++) {
+			char operation;
+			uint32_t len;
+			intToCigar(aligned_interval_cigar[i][j], operation, len);
+			logger.debug() << operation << len << "\n";
+		}
+	}
+}
+
+// This function combines multiple cigar vectors and intersperses them with 'anchor' operations. 
+// It also removes any zero-length operations from the start and end of the combined vector.
+cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar, const RareMatchPairs& anchors) {
+	cigar final_cigar;
+	auto anchor_cigar = anchors.begin();
+
+	// Iterate through each cigar vector and add its units to the final_cigar vector.
+	// Also intersperse 'anchor' operations between the cigar vectors.
+	for (const auto& single_cigar : aligned_interval_cigar) {
+		for (const auto& unit : single_cigar) {
+			final_cigar.push_back(unit);
+		}
+		// If there's an anchor, add an '=' operation with its match_length.
+		if (anchor_cigar != anchors.end()) {
+			final_cigar.push_back(cigarToInt('=', anchor_cigar->match_length));
+			++anchor_cigar;
+		}
+	}
+
+	// Remove zero-length operations from the start of the final_cigar, if present.
+	if (!final_cigar.empty()) {
+		char operation;
+		uint_t len;
+		intToCigar(final_cigar.front(), operation, len);
+		if (len == 0) {
+			final_cigar.erase(final_cigar.begin());
+		}
+	}
+
+	// Remove zero-length operations from the end of the final_cigar, if present.
+	if (!final_cigar.empty()) {
+		char operation;
+		uint_t len;
+		intToCigar(final_cigar.back(), operation, len);
+		if (len == 0) {
+			final_cigar.pop_back();
+		}
+	}
+
+	return final_cigar;
+}
+
 
 
 

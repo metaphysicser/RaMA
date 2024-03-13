@@ -52,6 +52,10 @@ private:
 
 	void saveCigarToTxt(const cigar& final_cigar, const std::string& filename);
 
+	void printCigarDebug(const std::vector<SequenceInfo>& data, const cigars& aligned_interval_cigar, const Intervals& intervals_need_align);
+
+	cigar combineCigarsWithAnchors(const cigars& aligned_interval_cigar, const RareMatchPairs& anchors);
+
 
 public:
 	explicit PairAligner(int_t match = 0, int_t mismatch = 3, int_t gap_open1 = 4, int_t gap_extension1 = 2, int_t gap_open2 = 12, int_t gap_extension2 = 1, bool use_parallel = true);

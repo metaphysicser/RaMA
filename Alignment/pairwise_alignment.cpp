@@ -223,6 +223,21 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 			anchor_cigar++;
 		}
 	}
+
+	char operation;
+	uint_t len;
+
+	intToCigar(final_cigar.front(), operation, len);
+	if (len == 0) {
+		final_cigar.erase(final_cigar.begin());
+	}
+
+	if (!final_cigar.empty()) {
+		intToCigar(final_cigar.back(), operation, len);
+		if (len == 0) {
+			final_cigar.pop_back();
+		}
+	}
 	return final_cigar;
 }
 

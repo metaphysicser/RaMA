@@ -27,7 +27,8 @@ extern "C" {
 #include "wavefront/wavefront_align.h"
 }
 #include "Alignment/WFA2-lib/bindings/cpp/WFAligner.hpp"
-Logger logger("/mnt/f/code/vs_code/RaMA/output/", "RaMA", true, debug);
+
+Logger logger("/mnt/f/code/vs_code/RaMA/output/", "RaMA", true, info);
 
 int main(int argc, char** argv) {
 	std::ios::sync_with_stdio(false);
@@ -35,12 +36,13 @@ int main(int argc, char** argv) {
 	const char* data_path = "/mnt/f/code/vs_code/RaMA/data/human.fasta";
 
 	std::vector<SequenceInfo>* data = new std::vector<SequenceInfo>(readDataPath(data_path));
-	AnchorFinder anchorfinder(*data, true,"/mnt/f/code/vs_code/RaMA/output/save/", false, true);
+	AnchorFinder anchorfinder(*data, true,"/mnt/f/code/vs_code/RaMA/output/save/", false, false);
 	RareMatchPairs final_anchors = anchorfinder.lanuchAnchorSearching();
     PairAligner pair_aligner(0, 3, 4, 2, 12, 1, true);
     pair_aligner.alignPairSeq(*data, final_anchors);
     logger.info() << "Max memory used is " << logger.getMaxMemoryUsed() << std::endl;
 	delete data;
+
 
     return 0;
 

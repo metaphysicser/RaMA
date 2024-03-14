@@ -94,6 +94,7 @@ struct RareMatchPair {
 using RareMatchPairs = std::vector<RareMatchPair>;
 
 void saveRareMatchPairsToCSV(const RareMatchPairs& pairs, const std::string& filename, uint_t fst_len);
+RareMatchPairs readRareMatchPairsFromCSV(const std::string& filename, uint_t fst_len);
 
 // Represents an interval within the LCP (Longest Common Prefix) array.
 class LCPInterval {

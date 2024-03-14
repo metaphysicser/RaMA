@@ -44,6 +44,43 @@ void saveRareMatchPairsToCSV(const RareMatchPairs& pairs, const std::string& fil
     file.close(); // Closes the file after writing.
 }
 
+RareMatchPairs readRareMatchPairsFromCSV(const std::string& filename, uint_t fst_len) {
+    std::ifstream file(filename); // 打开文件进行读取
+    RareMatchPairs pairs;
+
+    if (!file.is_open()) { // 检查文件是否成功打开
+        logger.error() << "Failed to open file: " << filename << std::endl;
+        return pairs; // 如果文件无法打开，返回空的RareMatchPairs
+    }
+
+    std::string line;
+    std::getline(file, line); // 读取并跳过标题行
+
+    // 逐行读取文件内容
+    while (std::getline(file, line)) {
+        std::stringstream ss(line); // 使用字符串流解析每行
+        RareMatchPair pair;
+        std::string temp; // 用于暂存从文件中读取的字符串
+        size_t i = 0;
+
+        // 读取当前行的每个元素
+        while (std::getline(ss, temp, ',')) {
+            switch (i++) {
+            case 0: break; // 跳过索引
+            case 1: pair.first_pos = std::stoull(temp); break;
+            case 2: pair.second_pos = std::stoull(temp) + fst_len + 1; break;
+            case 3: pair.match_length = std::stoull(temp); break;
+            case 4: pair.weight = std::stoull(temp); break;
+            }
+        }
+
+        pairs.push_back(pair); // 将解析好的pair添加到结果vector中
+    }
+
+    file.close(); // 关闭文件
+    return pairs; // 返回填充好的RareMatchPairs对象
+}
+
 
 
 LCPInterval::LCPInterval(const std::vector<int_t>& LCP_array, uint_t interval_size)
@@ -192,6 +229,11 @@ RareMatchPairs RareMatchFinder::findRareMatch(uint_t max_match_count) {
             lcp_interval.slideRight(); // Move to the next interval.
         }
     }
+
+ //   auto it = rare_match_map.find(first_seq_start + first_seq_len);
+ //   if (it != rare_match_map.end() && lcp_interval_size == 1) {
+	//	rare_match_map.erase(it);
+	//}
 
     // Expand rare matches to the left and convert them to pairs.
     leftExpandRareMatchMap(rare_match_map);

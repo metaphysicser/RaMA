@@ -24,35 +24,27 @@
 #include "gsacak.h"
 #include "rare_match.h"
 #include "threadpool.h"
-#if defined(_MSC_VER)
-#include <intrin.h>
-#endif
 #include <algorithm>
-//#if defined(__GNUC__) || defined(__clang__)
-//#define CTZ(x) __builtin_ctz(x)
-//#elif defined(_MSC_VER)
-//static __inline unsigned long CTZ(unsigned long mask) {
-//    unsigned long index;
-//    _BitScanForward(&index, mask);
-//    return index;
-//}
-//#else
-//#error "Compiler not supports CTZ function!"
-//#endif
+
 #define MAXM 32
 
-
+// An inline function to count trailing zeros (CTZ) in a 64-bit unsigned integer.
+// The CTZ operation counts the number of zero bits starting from the least significant bit until the first one bit is found.
 inline uint_t CTZ(uint64_t x) {
+    // If the input number is 0, then technically all bits are trailing zeros.
+    // Since we're working with a 64-bit number, return 64 to indicate this.
     if (x == 0) return 64;
 
-    uint_t count = 0;
+    uint_t count = 0; // Initialize a counter to keep track of the number of trailing zeros.
+    // Loop until we find a bit that is set to 1.
     while ((x & 1) == 0) {
-        count++;
-        x >>= 1;
+        count++; // Increment the counter for each trailing zero found.
+        x >>= 1; // Right-shift the number to check the next bit in the next iteration.
     }
-    return count;
+    return count; // Return the total number of trailing zeros found.
 }
-// Range Min Query
+
+
 class LinearSparseTable : public Serializable {
 private:
     uint_t N, block_size, block_num;

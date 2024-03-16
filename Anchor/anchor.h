@@ -28,8 +28,14 @@
 #include "RMQ.h"
 
 #define ANCHORFINDER_NAME "anchorfinder.bin"
+struct Interval
+{
+    uint_t pos;
+    uint_t len;
+    Interval(uint_t p, uint_t l) : pos(p), len(l) {}
+    Interval() : pos(0), len(0) {}
+};
 
-using Interval = std::pair<uint_t, uint_t>; // <start_pos, length>
 using Intervals = std::vector<std::pair<Interval, Interval>>;
 
 void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename); 

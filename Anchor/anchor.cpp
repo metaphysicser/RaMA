@@ -24,7 +24,7 @@ void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename)
     std::ofstream file(filename); // Opens the file for writing.
     if (!file.is_open()) { // Checks if the file is successfully opened.
         // Replace logger.error() with your logging mechanism or standard error output
-        std::cerr << "Failed to open file: " << filename << std::endl; // Logs error if file cannot be opened.
+        logger.error() << "Failed to open file: " << filename << std::endl; // Logs error if file cannot be opened.
         return; // Exits the function if file cannot be opened.
     }
 
@@ -39,13 +39,14 @@ void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename)
 
         // Writes the index and details of the current interval pair to the file.
         file << i + 1 << ","
-            << firstInterval.first << "," // First interval's start position
-            << firstInterval.second << "," // First interval's length
-            << secondInterval.first << "," // Second interval's start position
-            << secondInterval.second << "\n"; // Second interval's length
+            << firstInterval.pos << "," // First interval's start position
+            << firstInterval.len << "," // First interval's length
+            << secondInterval.pos << "," // Second interval's start position
+            << secondInterval.len << "\n"; // Second interval's length
     }
 
     file.close(); // Closes the file after writing.
+    logger.info() << filename << " has been saved" << std::endl;
 }
 
 // Constructor for AnchorFinder class
@@ -60,24 +61,28 @@ AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel, s
     this->SA = (uint_t*)malloc(concat_data_length * sizeof(uint_t));
     if (!SA) {
         logger.error() << "Failed to allocate " << concat_data_length * sizeof(uint_t) << "bytes of SA." << std::endl;
+        logger.error() << "RaMA Exit!" << std::endl;
         exit(EXIT_FAILURE);
     }
 
     this->LCP = (int_t*)malloc(concat_data_length * sizeof(int_t));
     if (!LCP) {
         logger.error() << "Failed to allocate " << concat_data_length * sizeof(int_t) << "bytes of LCP." << std::endl;
+        logger.error() << "RaMA Exit!" << std::endl;
         exit(EXIT_FAILURE);
     }
 
     this->DA = (int_da*)malloc(concat_data_length * sizeof(int_da));
     if (!DA) {
         logger.error() << "Failed to allocate " << concat_data_length * sizeof(int_t) << "bytes of DA." << std::endl;
+        logger.error() << "RaMA Exit!" << std::endl;
         exit(EXIT_FAILURE);
     }
 
     this->ISA = (uint_t*)malloc(concat_data_length * sizeof(uint_t));
     if (!ISA) {
         logger.error() << "Failed to allocate " << concat_data_length * sizeof(uint_t) << "bytes of ISA." << std::endl;
+        logger.error() << "RaMA Exit!" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -94,13 +99,27 @@ AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel, s
             logger.info() << "Fail to load " << save_file_name << ", start to construct arrays!" << std::endl;
         }
         logger.info() << "The suffix array is constructing..." << std::endl;
-        gsacak(concat_data, SA, LCP, DA, concat_data_length);
-        logger.info() << "The suffix array construction is finished!" << std::endl;
+        try {
+            gsacak(concat_data, SA, LCP, DA, concat_data_length);
+            logger.info() << "The suffix array construction is finished!" << std::endl;
+        }
+        catch (std::exception& e) {
+            logger.error() << "Error: " << e.what() << std::endl;
+            logger.error() << "RaMA Exit!" << std::endl;
+            exit(EXIT_FAILURE);
+        }
 
         logger.info() << "The sparse table is constructing..." << std::endl;
-        // this->rmq = RMQ(LCP, concat_data_length, use_parallel);
-        this->rmq = LinearSparseTable(LCP, concat_data_length, use_parallel);
-        logger.info() << "The sparse table construction is finished!" << std::endl;
+        try {
+            this->rmq = LinearSparseTable(LCP, concat_data_length, use_parallel);
+            logger.info() << "The sparse table construction is finished!" << std::endl;
+        }
+        catch (std::exception& e) {
+            logger.error() << "Error: " << e.what() << std::endl;
+			logger.error() << "RaMA Exit!" << std::endl;
+			exit(EXIT_FAILURE);
+        }
+        
 
         if (use_parallel)
             constructISAParallel();
@@ -290,8 +309,8 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
     ThreadPool pool(std::thread::hardware_concurrency()); // Use thread pool for potential parallel execution
     uint_t depth = 0;
     Anchor* root = new Anchor(depth); // Create root anchor node
-    Interval first_interval = std::make_pair(0, first_seq_len); // Define interval for the first sequence
-    Interval second_interval = std::make_pair(0, second_seq_len); // Define interval for the second sequence
+    Interval first_interval(0, first_seq_len); // Define interval for the first sequence
+    Interval second_interval(0, second_seq_len); // Define interval for the second sequence
     uint_t task_id = 0;
     if (use_parallel) {
         pool.enqueue([this, &pool, depth, task_id, root, first_interval, second_interval]() { 
@@ -305,8 +324,8 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
     RareMatchPairs first_anchors = root->rare_match_pairs;
     saveRareMatchPairsToCSV(first_anchors, "/mnt/f/code/vs_code/RaMA/output/first_anchor.csv", first_seq_len);
 
-    RareMatchPairs final_anchors = root->mergeRareMatchPairs(); // Merge rare match pairs from the root anchor
-    //RareMatchPairs final_anchors = verifyAnchors(root->mergeRareMatchPairs()); // Merge rare match pairs from the root anchor
+    // RareMatchPairs final_anchors = root->mergeRareMatchPairs(); // Merge rare match pairs from the root anchor
+    RareMatchPairs final_anchors = verifyAnchors(root->mergeRareMatchPairs()); // Merge rare match pairs from the root anchor
     saveRareMatchPairsToCSV(final_anchors, "/mnt/f/code/vs_code/RaMA/output/final_anchor.csv", first_seq_len);
 
     delete root; // Clean up the root anchor
@@ -327,10 +346,10 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
     uint_t new_depth = depth + 1;
 
     // Extract starting points and lengths from the intervals.
-    uint_t first_seq_start = first_interval.first;
-    uint_t fst_len = first_interval.second;
-    uint_t second_seq_start = second_interval.first + first_seq_len + 1;
-    uint_t scd_len = second_interval.second;
+    uint_t first_seq_start = first_interval.pos;
+    uint_t fst_len = first_interval.len;
+    uint_t second_seq_start = second_interval.pos + first_seq_len + 1;
+    uint_t scd_len = second_interval.len;
 
     // Return early if either sequence segment is empty.
     if (fst_len == 0 || scd_len == 0) {
@@ -401,8 +420,6 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
                 });
         }
         else {
-            if(new_first_interval.first == 214153)
-                std::cout<< "214153" << std::endl;
             locateAnchor(pool, new_depth, new_task_id, new_anchor, new_first_interval, new_second_interval);
         }   
         new_task_id++;
@@ -422,10 +439,10 @@ Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_matc
     Intervals intervals; // Store the resulting intervals.
 
     // Initialize starting points and lengths for the first and second sequence segments.
-    uint_t start1 = first_interval.first;
-    uint_t seq1_length = first_interval.second;
-    uint_t start2 = second_interval.first + fst_length + 1;
-    uint_t seq2_length = second_interval.second;
+    uint_t start1 = first_interval.pos;
+    uint_t seq1_length = first_interval.len;
+    uint_t start2 = second_interval.pos + fst_length + 1;
+    uint_t seq2_length = second_interval.len;
     uint_t i = 0;
     // Iterate over each rare match pair to calculate intervals.
     for (const auto& pair : rare_match_pairs) {

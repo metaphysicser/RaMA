@@ -79,7 +79,6 @@ void LinearSparseTable::buildSubPreParallel() {
             });
     }
 
-
     for (uint_t block = 0; block < block_num; ++block) {
         pool.enqueue([this, block]() {
             uint_t start = block * block_size + 1;

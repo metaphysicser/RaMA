@@ -55,6 +55,7 @@ std::vector<SequenceInfo> readDataPath(const char* data_path) {
     // Check if the specified file exists.
     if (!fileExists(data_path)) {
         logger.error() << "Cannot find the fasta data, please check the data path." << std::endl;
+        logger.error() << "RaMA Exit!" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -62,6 +63,7 @@ std::vector<SequenceInfo> readDataPath(const char* data_path) {
     FILE* f_pointer = fopen(data_path, "r");
     if (!f_pointer) {
         logger.error() << "Failed to open the fasta data path." << std::endl;
+        logger.error() << "RaMA Exit!" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -87,6 +89,7 @@ std::vector<SequenceInfo> readDataPath(const char* data_path) {
     if (data.size() != 2) {
         logger.error() << "The fasta file should only have 2 sequences, but there are "
             << data.size() << " in it." << std::endl;
+        logger.error() << "RaMA Exit!" << std::endl;
         exit(EXIT_FAILURE);
     }
 

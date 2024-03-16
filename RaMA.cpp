@@ -32,21 +32,22 @@ Logger logger("/mnt/f/code/vs_code/RaMA/output/", "RaMA", true, info);
 
 
 int main(int argc, char** argv) {
-
+    logger.info() << "Start RaMA!" << std::endl;
 	std::ios::sync_with_stdio(false);
 	
-	const char* data_path = "/mnt/f/code/vs_code/RaMA/data/chr1.fasta";
+	const char* data_path = "/mnt/f/code/vs_code/RaMA/data/human.fasta";
     RareMatchPairs final_anchors;
 	std::vector<SequenceInfo>* data = new std::vector<SequenceInfo>(readDataPath(data_path));
     {
-        AnchorFinder anchor_finder(*data, false, "/mnt/f/code/vs_code/RaMA/output/save/", false, false);
+        AnchorFinder anchor_finder(*data, true, "/mnt/f/code/vs_code/RaMA/output/save/", false, false);
         final_anchors = anchor_finder.lanuchAnchorSearching();
     }
 
-    PairAligner pair_aligner(0, 3, 4, 2, 12, 1, false);
+    PairAligner pair_aligner(0, 3, 4, 2, 12, 1, true);
     pair_aligner.alignPairSeq(*data, final_anchors);
     logger.info() << "Max memory used is " << logger.getMaxMemoryUsed() << std::endl;
 	delete data;
+    logger.info() << "End RaMA!" << std::endl;
 
     return 0;
 

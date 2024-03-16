@@ -32,16 +32,16 @@ Logger logger("/mnt/f/code/vs_code/RaMA/output/", "RaMA", true, info);
 
 
 int main(int argc, char** argv) {
+
 	std::ios::sync_with_stdio(false);
 	
-	const char* data_path = "/mnt/f/code/vs_code/RaMA/data/truncated_sequences_1000.fasta";
+	const char* data_path = "/mnt/f/code/vs_code/RaMA/data/chr1.fasta";
     RareMatchPairs final_anchors;
 	std::vector<SequenceInfo>* data = new std::vector<SequenceInfo>(readDataPath(data_path));
     {
         AnchorFinder anchor_finder(*data, false, "/mnt/f/code/vs_code/RaMA/output/save/", false, false);
         final_anchors = anchor_finder.lanuchAnchorSearching();
     }
-    // final_anchors = readRareMatchPairsFromCSV("/mnt/f/code/vs_code/RaMA/output/final_anchor.csv", (*data)[0].seq_len);
 
     PairAligner pair_aligner(0, 3, 4, 2, 12, 1, false);
     pair_aligner.alignPairSeq(*data, final_anchors);

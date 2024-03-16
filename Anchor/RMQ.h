@@ -28,21 +28,32 @@
 #include <intrin.h>
 #endif
 #include <algorithm>
-#if defined(__GNUC__) || defined(__clang__)
-#define CTZ(x) __builtin_ctz(x)
-#elif defined(_MSC_VER)
-static __inline unsigned long CTZ(unsigned long mask) {
-    unsigned long index;
-    _BitScanForward(&index, mask);
-    return index;
-}
-#else
-#error "Compiler not supports CTZ function!"
-#endif
+//#if defined(__GNUC__) || defined(__clang__)
+//#define CTZ(x) __builtin_ctz(x)
+//#elif defined(_MSC_VER)
+//static __inline unsigned long CTZ(unsigned long mask) {
+//    unsigned long index;
+//    _BitScanForward(&index, mask);
+//    return index;
+//}
+//#else
+//#error "Compiler not supports CTZ function!"
+//#endif
 #define MAXM 32
 
+
+inline uint_t CTZ(uint64_t x) {
+    if (x == 0) return 64;
+
+    uint_t count = 0;
+    while ((x & 1) == 0) {
+        count++;
+        x >>= 1;
+    }
+    return count;
+}
 // Range Min Query
-class RMQ : public Serializable {
+class LinearSparseTable : public Serializable {
 private:
     uint_t N, block_size, block_num;
     int_t* LCP;
@@ -69,10 +80,10 @@ private:
 
 public:
     // Default constructor initializes members
-    explicit RMQ() : N(0), block_size(0), block_num(0), LCP(nullptr) {}
+    explicit LinearSparseTable() : N(0), block_size(0), block_num(0), LCP(nullptr) {}
 
     // Constructor initializes LCP array and builds RMQ structure
-    explicit RMQ(int_t* A, uint_t n, bool use_parallel = true);
+    explicit LinearSparseTable(int_t* A, uint_t n, bool use_parallel = true);
 
     void setLCP(int_t* A);
 
@@ -87,12 +98,12 @@ public:
 };
 
 
-class SparseTable {
+class SparseTable : public Serializable {
 public:
     // Default constructor initializes members
     explicit SparseTable() : N(0) {}
 
-    SparseTable(const int_t* LCP, size_t N) : N(N) {
+    SparseTable(const int_t* LCP, size_t N) : LCP(LCP), N(N) {
         build(LCP);
     }
 
@@ -102,7 +113,26 @@ public:
         return std::min(st[L][j], st[R - (1 << j) + 1][j]);
     }
 
+    // Serializes the RMQ structure to an output stream
+    void serialize(std::ostream& out) const override {
+        saveNumber(out, N);
+        saveVector2D(out, st);
+        saveVector(out, log2);
+    }
+
+    // Deserializes the RMQ structure from an input stream
+    void deserialize(std::istream& in) override {
+        loadNumber(in, N);
+        loadVector2D(in, st);
+        loadVector(in, log2);
+    }
+
+    void setLCP(int_t* A) {
+        this->LCP = A;
+    }
+
 private:
+    const int_t* LCP;
     size_t N;
     std::vector<std::vector<int_t>> st;
     std::vector<int_t> log2;
@@ -126,5 +156,7 @@ private:
             }
         }
     }
+
+
 };
 

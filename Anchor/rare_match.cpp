@@ -218,10 +218,10 @@ RareMatchPairs RareMatchFinder::findRareMatch(uint_t max_match_count) {
                     uint_t min_position = rare_match.min_key;
                     // Update or add the rare match in the map.
                     auto it = rare_match_map.find(min_position);
-                    if (it != rare_match_map.end() && it->second.match_length < match_length) {
-                        it->second = rare_match;
-                    }
-                    else {
+                    if (it != rare_match_map.end()) {
+                        if(it->second.match_length < match_length)
+                            it->second = rare_match;
+                    } else {
                         rare_match_map[min_position] = rare_match;
                     }
                 }

@@ -25,22 +25,7 @@
 #include "gsacak.h"
 #include "rare_match.h"
 #include "threadpool.h"
-#if defined(_MSC_VER)
-#include <intrin.h>
-#endif
-#include <algorithm>
-#if defined(__GNUC__) || defined(__clang__)
-#define CTZ(x) __builtin_ctz(x)
-#elif defined(_MSC_VER)
-static __inline unsigned long CTZ(unsigned long mask) {
-    unsigned long index;
-    _BitScanForward(&index, mask);
-    return index;
-}
-#else
-#error "Compiler not supports CTZ function!"
-#endif
-#define MAXM 20
+#include "RMQ.h"
 
 #define ANCHORFINDER_NAME "anchorfinder.bin"
 
@@ -87,51 +72,6 @@ struct Anchor {
 };
 
 
-// Range Min Query
-class RMQ : public Serializable {
-private:
-    uint_t N, block_size, block_num;
-    int_t* LCP;
-    std::vector<std::vector<uint_t>> st; // Sparse table
-    std::vector<uint_t> pow, log; // Power and logarithm tables for fast computations
-    std::vector<uint_t> pre, sub; // Precomputed values for block and sub-block queries
-    std::vector<uint_t> belong, pos; // Auxiliary vectors for block decomposition
-    std::vector<uint64_t> f; // Auxiliary vector for queries
-
-    // Builds the sparse table for RMQ
-    void buildST();
-
-    // Builds the precomputed tables for block and sub-block queries
-    void buildSubPre();
-    void buildSubPreParallel(); // Parallel version
-
-    // Builds blocks for the RMQ structure
-    void buildBlock();
-    void buildBlockParallel(); // Parallel version
-
-    // Utility functions for block decomposition
-    int_t getBelong(int_t i) const;
-    int_t getPos(int_t i) const;
-
-public:
-    // Default constructor initializes members
-    explicit RMQ() : N(0), block_size(0), block_num(0), LCP(nullptr) {}
-
-    // Constructor initializes LCP array and builds RMQ structure
-    explicit RMQ(int_t* A, uint_t n, bool use_parallel = true);
-
-    void setLCP(int_t* A);
-
-    // Queries the minimum value in the range [l, r]
-    int_t queryMin(uint_t l, uint_t r) const;
-
-    // Serializes the RMQ structure to an output stream
-    void serialize(std::ostream& out) const override;
-
-    // Deserializes the RMQ structure from an input stream
-    void deserialize(std::istream& in) override;
-};
-
 
 class AnchorFinder : public Serializable {
 private:
@@ -151,7 +91,7 @@ private:
 
     uint_t* ISA; // Inverse Suffix Array
 
-    RMQ rmq; // Range Minimum Query structure for LCP queries
+    LinearSparseTable rmq; // Range Minimum Query structure for LCP queries
 
     // Concatenates sequences from provided data
     void concatSequence(std::vector<SequenceInfo>& data);

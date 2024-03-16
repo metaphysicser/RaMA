@@ -20,7 +20,7 @@
 
 #include "RMQ.h"
 
-void RMQ::buildST() {
+void LinearSparseTable::buildST() {
     // Initialize the first level of the sparse table with minimum values within each block
     int_t cur = 0, id = 1;
     for (uint_t i = 1; i <= N; ++i) {
@@ -41,7 +41,7 @@ void RMQ::buildST() {
 }
 
 
-void RMQ::buildSubPre() {
+void LinearSparseTable::buildSubPre() {
     // Precompute minimum values for LCP within each block
     for (uint_t i = 1; i <= N; ++i) {
         if (belong[i] != belong[i - 1])
@@ -60,7 +60,7 @@ void RMQ::buildSubPre() {
     }
 }
 
-void RMQ::buildSubPreParallel() {
+void LinearSparseTable::buildSubPreParallel() {
     // Parallel version of buildSubPre using a thread pool for concurrency
     ThreadPool pool(std::thread::hardware_concurrency());
 
@@ -97,11 +97,11 @@ void RMQ::buildSubPreParallel() {
     pool.waitAllTasksDone();
 }
 
-// Sequentially constructs block information for RMQ
-// This method implements a block-based approach to precompute RMQ information for each block.
+// Sequentially constructs block information for LinearSparseTable
+// This method implements a block-based approach to precompute LinearSparseTable information for each block.
 // It utilizes a monotone stack to maintain the indices where LCP values are strictly decreasing.
-// The f array is used to store block-wise precomputed RMQ data using bit manipulation.
-void RMQ::buildBlock() {
+// The f array is used to store block-wise precomputed LinearSparseTable data using bit manipulation.
+void LinearSparseTable::buildBlock() {
     int_t top = 0; // Stack pointer
     std::vector<int_t> s(block_size + 1, 0); // Monotone stack
     uint64_t bit = 1;
@@ -118,9 +118,9 @@ void RMQ::buildBlock() {
 }
 
 //Parallel version of buildBlock using a thread pool for concurrency
-//This method parallelizes the block-based RMQ preprocessing by dividing the sequence into chunks
+//This method parallelizes the block-based LinearSparseTable preprocessing by dividing the sequence into chunks
 //and processing each chunk in parallel, reducing overall computation time on multicore systems.
-void RMQ::buildBlockParallel() {
+void LinearSparseTable::buildBlockParallel() {
     ThreadPool pool(std::thread::hardware_concurrency()); // Create a thread pool
 
     for (uint_t start = 1; start <= N; start += block_size) {
@@ -145,7 +145,7 @@ void RMQ::buildBlockParallel() {
     pool.waitAllTasksDone(); // Wait for all tasks to complete
 }
 
-RMQ::RMQ(int_t* a, uint_t n, bool use_parallel) {
+LinearSparseTable::LinearSparseTable(int_t* a, uint_t n, bool use_parallel) {
     LCP = a; // Directly use the provided array for LCP values
     N = n; // Set the total number of elements
     // Initialize vectors with appropriate sizes and default values
@@ -185,7 +185,7 @@ RMQ::RMQ(int_t* a, uint_t n, bool use_parallel) {
 }
 
 
-int_t RMQ::queryMin(uint_t l, uint_t r) const {
+int_t LinearSparseTable::queryMin(uint_t l, uint_t r) const {
     assert(l >= 0 && r <= N); // Ensure query indices are within bounds
     ++l; // Convert to 1-based indexing
     ++r;
@@ -200,32 +200,34 @@ int_t RMQ::queryMin(uint_t l, uint_t r) const {
         return getMinValue(ans1, ans2); // Return the overall minimum
     }
     else { // If l and r are in the same block
+        uint_t m = f[r] >> pos[l];
+        uint_t q = CTZ(m);
         return LCP[l + CTZ(f[r] >> pos[l]) - 1]; // Directly query within the block
     }
 }
 
 
 // Returns the block ID to which the i-th element belongs
-int_t RMQ::getBelong(int_t i) const {
+int_t LinearSparseTable::getBelong(int_t i) const {
     return (i - 1) / block_size + 1;
 }
 
 // Returns the position of the i-th element within its block
-int_t RMQ::getPos(int_t i) const {
+int_t LinearSparseTable::getPos(int_t i) const {
     return (i - 1) % block_size;
 }
 
 
-// Serializes the RMQ object state to an output stream.
+// Serializes the LinearSparseTable object state to an output stream.
 // This includes saving the fundamental configurations and the various precomputed vectors
-// necessary for quick RMQ queries.
-void RMQ::serialize(std::ostream& out) const {
-    // Save basic RMQ configuration numbers
+// necessary for quick LinearSparseTable queries.
+void LinearSparseTable::serialize(std::ostream& out) const {
+    // Save basic LinearSparseTable configuration numbers
     saveNumber(out, N);
     saveNumber(out, block_size);
     saveNumber(out, block_num);
 
-    // Save precomputed vectors for RMQ algorithm
+    // Save precomputed vectors for LinearSparseTable algorithm
     saveVector(out, pow);
     saveVector(out, log);
     saveVector(out, pre);
@@ -239,16 +241,16 @@ void RMQ::serialize(std::ostream& out) const {
 }
 
 
-// Deserializes the RMQ object state from an input stream.
-// This method loads the RMQ configuration and the precomputed vectors
-// to fully reconstruct the RMQ state for future queries.
-void RMQ::deserialize(std::istream& in) {
-    // Load basic RMQ configuration numbers
+// Deserializes the LinearSparseTable object state from an input stream.
+// This method loads the LinearSparseTable configuration and the precomputed vectors
+// to fully reconstruct the LinearSparseTable state for future queries.
+void LinearSparseTable::deserialize(std::istream& in) {
+    // Load basic LinearSparseTable configuration numbers
     loadNumber(in, N);
     loadNumber(in, block_size);
     loadNumber(in, block_num);
 
-    // Load precomputed vectors for RMQ algorithm
+    // Load precomputed vectors for LinearSparseTable algorithm
     loadVector(in, pow);
     loadVector(in, log);
     loadVector(in, pre);
@@ -261,6 +263,6 @@ void RMQ::deserialize(std::istream& in) {
     loadVector2D(in, st);
 }
 
-void RMQ::setLCP(int_t* A) {
+void LinearSparseTable::setLCP(int_t* A) {
     this->LCP = A;
 }

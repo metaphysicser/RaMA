@@ -257,14 +257,16 @@ void PairAligner::verifyCigar(const cigar& final_cigar, const std::vector<Sequen
 
 	for (const auto& unit : final_cigar) {
 		char operation;
-		uint_t len;
+		uint32_t len;
+		
 		intToCigar(unit, operation, len); // Convert each cigar unit back to operation and length
+
 		switch (operation) {
 		case '=': // Sequence match
 			for (uint_t i = 0; i < len; ++i) {
 				if (pattern[pattern_pos + i] != text[text_pos + i]) {
-					logger.error() << "Mismatch found where exact match expected at pattern position "
-						<< pattern_pos + i << " and text position " << text_pos + i << std::endl;
+					logger.error() << "Mismatch found where exact match expected at seq1 position "
+						<< pattern_pos + i << " and seq2 position " << text_pos + i << std::endl;
 					return;
 				}
 			}
@@ -274,8 +276,8 @@ void PairAligner::verifyCigar(const cigar& final_cigar, const std::vector<Sequen
 		case 'X': // Mismatch
 			for (uint_t i = 0; i < len; ++i) {
 				if (pattern[pattern_pos + i] == text[text_pos + i]) {
-					std::cerr << "Exact match found where mismatch expected at pattern position "
-						<< pattern_pos + i << " and text position " << text_pos + i << std::endl;
+					logger.error() << "Exact match found where mismatch expected at seq1 position "
+						<< pattern_pos + i << " and seq2 position " << text_pos + i << std::endl;
 					return;
 				}
 			}
@@ -367,7 +369,7 @@ cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar
 	// Remove zero-length operations from the start of the final_cigar, if present.
 	if (!final_cigar.empty()) {
 		char operation;
-		uint_t len;
+		uint32_t len;
 		intToCigar(final_cigar.front(), operation, len);
 		if (len == 0) {
 			final_cigar.erase(final_cigar.begin());
@@ -377,7 +379,7 @@ cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar
 	// Remove zero-length operations from the end of the final_cigar, if present.
 	if (!final_cigar.empty()) {
 		char operation;
-		uint_t len;
+		uint32_t len;
 		intToCigar(final_cigar.back(), operation, len);
 		if (len == 0) {
 			final_cigar.pop_back();

@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     logger.info() << "Start RaMA!" << std::endl;
 	std::ios::sync_with_stdio(false);
 	
-	const char* data_path = "/mnt/f/code/vs_code/RaMA/data/test2.fasta";
+	const char* data_path = "/mnt/f/code/vs_code/RaMA/data/human.fasta";
     RareMatchPairs final_anchors;
 	std::vector<SequenceInfo>* data = new std::vector<SequenceInfo>(readDataPath(data_path));
     {

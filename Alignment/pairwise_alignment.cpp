@@ -191,9 +191,41 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 
 		// Similar handling for the opposite condition.
 		if (scd_len <= 5 && fst_len > 100) {
-			// Logic similar to the above condition with roles of seq1 and seq2 reversed.
-			// Construct the CIGAR string based on sequence comparison.
-			// Additional comments omitted for brevity.
+			cigar tmp_cigar;
+			uint_t cigar_len = 1;
+			char cur_state = (seq1[0] == seq2[0]) ? '=' : 'X';
+
+			for (uint_t i = 1; i < scd_len; ++i) {
+				if (seq1[i] == seq2[i]) {
+					if (cur_state == '=') {
+						++cigar_len;
+					}
+					else {
+						tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+						cur_state = '=';
+						cigar_len = 1;
+					}
+				}
+				else {
+					if (cur_state == 'X') {
+						++cigar_len;
+					}
+					else {
+						tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+						cur_state = 'X';
+						cigar_len = 1;
+					}
+				}
+			}
+
+			tmp_cigar.emplace_back(cigarToInt(cur_state, cigar_len));
+
+			if (fst_len > scd_len) {
+				tmp_cigar.emplace_back(cigarToInt('D', fst_len - scd_len));
+			}
+
+			aligned_interval_cigar[i] = tmp_cigar;
+			continue;
 		}
 
 		// Add the index to the list for wavefront alignment if it wasn't handled above.

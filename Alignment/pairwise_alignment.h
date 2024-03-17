@@ -32,6 +32,12 @@ using cigarunit = uint32_t;
 using cigar = std::vector<cigarunit>;
 using cigars = std::vector<cigar>;
 
+uint32_t cigarToInt(char operation, uint32_t len);
+
+void intToCigar(uint32_t cigar, char& operation, uint32_t& len);
+
+cigar convertToCigarVector(uint32_t* cigar_buffer, int cigar_length);
+
 class PairAligner {
 private:
 	int_t match;
@@ -69,9 +75,4 @@ public:
 		alignPairSeq(data, {}); // Calling the first method with default second argument
 	}
 
-	static uint32_t cigarToInt(char operation, uint32_t len);
-
-	static void intToCigar(uint32_t cigar, char& operation, uint32_t& len);
-
-	static cigar convertToCigarVector(uint32_t* cigar_buffer, int cigar_length);
 };

@@ -18,6 +18,47 @@
  // Contact: pingluzhang@outlook.com
  // Created: 2024-02-29
 # include "pairwise_alignment.h"
+cigar convertToCigarVector(uint32_t* cigar_buffer, int cigar_length) {
+	cigar resultCigar;
+	for (int i = 0; i < cigar_length; ++i) {
+		resultCigar.push_back(cigar_buffer[i]);
+	}
+	return resultCigar;
+}
+
+uint32_t cigarToInt(char operation, uint32_t len) {
+	uint32_t opCode;
+	// Convert CIGAR operation character to an operation code
+	switch (operation) {
+	case 'M': opCode = 0x0; break; // Match
+	case 'I': opCode = 0x1; break; // Insertion
+	case 'D': opCode = 0x2; break; // Deletion
+	case '=': opCode = 0x7; break; // Sequence match
+	case 'X': opCode = 0x8; break; // Mismatch
+		// Add cases for other SAM specification operation codes as needed
+	default: opCode = 0xF; break; // Unknown operation
+	}
+	// Combine operation length and code into a single uint32_t value
+	return (len << 4) | opCode; // Shift length left by 4 bits, then combine with opCode
+}
+
+
+void intToCigar(uint32_t cigar, char& operation, uint32_t& len) {
+	uint32_t opCode = cigar & 0xF; // Extract the lower 4 bits as the operation code
+	len = cigar >> 4; // Extract the length by shifting right by 4 bits
+
+	// Convert operation code back to a CIGAR operation character
+	switch (opCode) {
+	case 0x0: operation = 'M'; break; // Match
+	case 0x1: operation = 'I'; break; // Insertion
+	case 0x2: operation = 'D'; break; // Deletion
+	case 0x7: operation = '='; break; // Sequence match
+	case 0x8: operation = 'X'; break; // Mismatch
+		// Add cases for other SAM specification operation codes as needed
+	default: operation = '?'; break; // Unknown operation
+	}
+}
+
 
 PairAligner::PairAligner(int_t match, int_t mismatch, int_t gap_open1, int_t gap_extension1, int_t gap_open2, int_t gap_extension2, bool use_parallel):
 	match(match), 
@@ -167,47 +208,6 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 	return combineCigarsWithAnchors(aligned_interval_cigar, anchors);
 }
 
-
-cigar PairAligner::convertToCigarVector(uint32_t* cigar_buffer, int cigar_length) {
-	cigar resultCigar;
-	for (int i = 0; i < cigar_length; ++i) {
-		resultCigar.push_back(cigar_buffer[i]);
-	}
-	return resultCigar;
-}
-
-uint32_t PairAligner::cigarToInt(char operation, uint32_t len) {
-	uint32_t opCode;
-	// Convert CIGAR operation character to an operation code
-	switch (operation) {
-	case 'M': opCode = 0x0; break; // Match
-	case 'I': opCode = 0x1; break; // Insertion
-	case 'D': opCode = 0x2; break; // Deletion
-	case '=': opCode = 0x7; break; // Sequence match
-	case 'X': opCode = 0x8; break; // Mismatch
-		// Add cases for other SAM specification operation codes as needed
-	default: opCode = 0xF; break; // Unknown operation
-	}
-	// Combine operation length and code into a single uint32_t value
-	return (len << 4) | opCode; // Shift length left by 4 bits, then combine with opCode
-}
-
-
-void PairAligner::intToCigar(uint32_t cigar, char& operation, uint32_t& len) {
-	uint32_t opCode = cigar & 0xF; // Extract the lower 4 bits as the operation code
-	len = cigar >> 4; // Extract the length by shifting right by 4 bits
-
-	// Convert operation code back to a CIGAR operation character
-	switch (opCode) {
-	case 0x0: operation = 'M'; break; // Match
-	case 0x1: operation = 'I'; break; // Insertion
-	case 0x2: operation = 'D'; break; // Deletion
-	case 0x7: operation = '='; break; // Sequence match
-	case 0x8: operation = 'X'; break; // Mismatch
-		// Add cases for other SAM specification operation codes as needed
-	default: operation = '?'; break; // Unknown operation
-	}
-}
 
 void PairAligner::verifyCigar(const cigar& final_cigar, const std::vector<SequenceInfo>& data) {
 	if (data.size() < 2) {

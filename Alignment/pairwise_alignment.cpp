@@ -44,10 +44,9 @@ PairAligner::PairAligner(int_t match, int_t mismatch, int_t gap_open1, int_t gap
 }
 
 void PairAligner::alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors) {
-	Interval first_interval = { 0, data[0].seq_len };
-	Interval second_interval = { 0, data[1].seq_len };
+	Interval interval(0, data[0].seq_len, 0, data[1].seq_len);
 	uint_t fst_length = data[0].seq_len;
-	Intervals intervals_need_align = AnchorFinder::RareMatchPairs2Intervals(anchors, first_interval, second_interval, fst_length);
+	Intervals intervals_need_align = AnchorFinder::RareMatchPairs2Intervals(anchors, interval, fst_length);
 	saveIntervalsToCSV(intervals_need_align, "/mnt/f/code/vs_code/RaMA/output/intervals_need_align.csv");
 	cigar final_cigar = alignIntervals(data, intervals_need_align, anchors);
 	saveCigarToTxt(final_cigar, "/mnt/f/code/vs_code/RaMA/output/final_cigar.txt");
@@ -64,11 +63,11 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 
 	// todo: tmp_interval_pairs.first.second change name
 	for (uint_t i = 0; i < intervals_need_align.size(); ++i) {
-		std::pair<Interval, Interval> tmp_interval_pairs = intervals_need_align[i];
-		uint_t fst_len = tmp_interval_pairs.first.len;
-		uint_t scd_len = tmp_interval_pairs.second.len;
-		std::string seq1 = data[0].sequence.substr(tmp_interval_pairs.first.pos, tmp_interval_pairs.first.len);
-		std::string seq2 = data[1].sequence.substr(tmp_interval_pairs.second.pos, tmp_interval_pairs.second.len);
+		Interval tmp_interval = intervals_need_align[i];
+		uint_t fst_len = tmp_interval.len1;
+		uint_t scd_len = tmp_interval.len2;
+		std::string seq1 = data[0].sequence.substr(tmp_interval.pos1, tmp_interval.len1);
+		std::string seq2 = data[1].sequence.substr(tmp_interval.pos2, tmp_interval.len2);
 
 		if (fst_len == 0) { 
 			// Insert
@@ -298,9 +297,9 @@ void PairAligner::saveCigarToTxt(const cigar& final_cigar, const std::string& fi
 
 void PairAligner::printCigarDebug(const std::vector<SequenceInfo>& data, const cigars& aligned_interval_cigar, const Intervals& intervals_need_align) {
 	for (uint_t i = 0; i < aligned_interval_cigar.size(); i++) {
-		std::pair<Interval, Interval> tmp_interval_pairs = intervals_need_align[i];
-		std::string seq1 = data[0].sequence.substr(tmp_interval_pairs.first.pos, tmp_interval_pairs.first.len);
-		std::string seq2 = data[1].sequence.substr(tmp_interval_pairs.second.pos, tmp_interval_pairs.second.len);
+		Interval tmp_interval = intervals_need_align[i];
+		std::string seq1 = data[0].sequence.substr(tmp_interval.pos1, tmp_interval.len1);
+		std::string seq2 = data[1].sequence.substr(tmp_interval.pos2, tmp_interval.len2);
 		logger.debug() << "CIGAR: " << i + 1 << "\n";
 		logger.debug() << "\n" << seq1 << "\n" << seq2 << "\n";
 		for (uint_t j = 0; j < aligned_interval_cigar[i].size(); j++) {
@@ -421,9 +420,9 @@ void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& 
 
 	for (uint_t i = 0; i < aligned_intervals_index.size(); ++i) {
 		uint_t index = aligned_intervals_index[i];
-		std::pair<Interval, Interval> tmp_interval_pairs = intervals_need_align[index];
-		std::string seq1 = data[0].sequence.substr(tmp_interval_pairs.first.pos, tmp_interval_pairs.first.len);
-		std::string seq2 = data[1].sequence.substr(tmp_interval_pairs.second.pos, tmp_interval_pairs.second.len);
+		Interval tmp_interval = intervals_need_align[index];
+		std::string seq1 = data[0].sequence.substr(tmp_interval.pos1, tmp_interval.len1);
+		std::string seq2 = data[1].sequence.substr(tmp_interval.pos2, tmp_interval.len2);
 		if (use_parallel) {
 			pool.enqueue([this, seq1, seq2, &aligned_interval_cigar, index]() {
 				wavefront_aligner_t* const wf_aligner = wavefront_aligner_new(&attributes);

@@ -30,13 +30,17 @@
 #define ANCHORFINDER_NAME "anchorfinder.bin"
 struct Interval
 {
-    uint_t pos;
-    uint_t len;
-    Interval(uint_t p, uint_t l) : pos(p), len(l) {}
-    Interval() : pos(0), len(0) {}
+    uint_t pos1;
+    uint_t len1;
+
+    uint_t pos2;
+    uint_t len2;
+
+    Interval(uint_t p1, uint_t l1, uint_t p2, uint_t l2) : pos1(p1), len1(l1), pos2(p2), len2(l2) {}
+    Interval() : pos1(0), len1(0), pos2(0), len2(0) {}
 };
 
-using Intervals = std::vector<std::pair<Interval, Interval>>;
+using Intervals = std::vector<Interval>;
 
 void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename); 
 
@@ -118,7 +122,7 @@ private:
     void constructISAParallel();
 
     // Locates anchors using a given thread pool, recursive depth, and intervals
-    void locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, Anchor* root, Interval first_interval, Interval second_interval);
+    void locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, Anchor* root, Interval interval);
 
     RareMatchPairs verifyAnchors(const RareMatchPairs& rare_match_pairs);
 
@@ -134,7 +138,7 @@ public:
     RareMatchPairs lanuchAnchorSearching();
 
     // Converts RareMatchPairs to Intervals considering specified intervals
-    static Intervals RareMatchPairs2Intervals(const RareMatchPairs& rare_match_pairs, Interval first_interval, Interval second_interval, uint_t fst_length);
+    static Intervals RareMatchPairs2Intervals(const RareMatchPairs& rare_match_pairs, Interval interval, uint_t fst_length);
 
     // Converts a global index to a local index relative to concatenated sequences
     static uint_t indexFromGlogalToLocal(uint_t index, uint_t fst_length);

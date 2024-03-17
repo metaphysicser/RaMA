@@ -33,16 +33,14 @@ void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename)
 
     // Iterates through each pair in the Intervals and writes its data to the CSV file.
     for (size_t i = 0; i < intervals.size(); ++i) {
-        const auto& intervalPair = intervals[i]; // References the current interval pair.
-        const auto& firstInterval = intervalPair.first; // References the first interval in the pair.
-        const auto& secondInterval = intervalPair.second; // References the second interval in the pair.
+        const auto& interval = intervals[i]; // References the current interval pair.
 
         // Writes the index and details of the current interval pair to the file.
         file << i + 1 << ","
-            << firstInterval.pos << "," // First interval's start position
-            << firstInterval.len << "," // First interval's length
-            << secondInterval.pos << "," // Second interval's start position
-            << secondInterval.len << "\n"; // Second interval's length
+            << interval.pos1 << "," // First interval's start position
+            << interval.len1 << "," // First interval's length
+            << interval.pos2 << "," // Second interval's start position
+            << interval.len2 << "\n"; // Second interval's length
     }
 
     file.close(); // Closes the file after writing.
@@ -309,17 +307,16 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
     ThreadPool pool(std::thread::hardware_concurrency()); // Use thread pool for potential parallel execution
     uint_t depth = 0;
     Anchor* root = new Anchor(depth); // Create root anchor node
-    Interval first_interval(0, first_seq_len); // Define interval for the first sequence
-    Interval second_interval(0, second_seq_len); // Define interval for the second sequence
+    Interval interval(0, first_seq_len, 0, second_seq_len); // Define interval
     uint_t task_id = 0;
     if (use_parallel) {
-        pool.enqueue([this, &pool, depth, task_id, root, first_interval, second_interval]() { 
-            this->locateAnchor(pool, depth, task_id, root, first_interval, second_interval);
+        pool.enqueue([this, &pool, depth, task_id, root, interval]() { 
+            this->locateAnchor(pool, depth, task_id, root, interval);
             });
         pool.waitAllTasksDone();
     }
     else {
-        locateAnchor(pool, depth, task_id, root, first_interval, second_interval); // Fallback to sequential search
+        locateAnchor(pool, depth, task_id, root, interval); // Fallback to sequential search
     }
     RareMatchPairs first_anchors = root->rare_match_pairs;
     saveRareMatchPairsToCSV(first_anchors, "/mnt/f/code/vs_code/RaMA/output/first_anchor.csv", first_seq_len);
@@ -338,7 +335,7 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
 // Launches the process of locating anchors within given intervals of two sequences.
 // The method explores the given intervals, constructs new arrays based on the ISA,
 // sorts them, and finds rare matches to determine new intervals for further exploration.
-void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, Anchor* root, Interval first_interval, Interval second_interval) {
+void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, Anchor* root, Interval interval) {
     // Log the start of a new task with its depth and task ID for debugging.
     logger.debug() << "Task " << task_id << " of depth " << depth << " begins" << std::endl;
 
@@ -346,10 +343,10 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
     uint_t new_depth = depth + 1;
 
     // Extract starting points and lengths from the intervals.
-    uint_t first_seq_start = first_interval.pos;
-    uint_t fst_len = first_interval.len;
-    uint_t second_seq_start = second_interval.pos + first_seq_len + 1;
-    uint_t scd_len = second_interval.len;
+    uint_t first_seq_start = interval.pos1;
+    uint_t fst_len = interval.len1;
+    uint_t second_seq_start = interval.pos2 + first_seq_len + 1;
+    uint_t scd_len = interval.len2;
 
     // Return early if either sequence segment is empty.
     if (fst_len == 0 || scd_len == 0) {
@@ -399,8 +396,11 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
     RareMatchFinder rare_match_finder(concat_data, new_SA, new_LCP, new_DA, first_seq_start, fst_len, second_seq_start,scd_len);
     RareMatchPairs optimal_pairs = rare_match_finder.findRareMatch(100);
 
+    if (optimal_pairs.empty())
+        return;
+
     // Convert rare match pairs to intervals for further exploration.
-    Intervals rare_match_intervals = RareMatchPairs2Intervals(optimal_pairs, first_interval, second_interval, this->first_seq_len);
+    Intervals rare_match_intervals = RareMatchPairs2Intervals(optimal_pairs, interval, this->first_seq_len);
 
     // Update the anchor's rare match pairs with the optimal ones found.
     root->rare_match_pairs = optimal_pairs;
@@ -408,19 +408,18 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
     // Recursively explore further intervals with new anchors.
     uint_t new_task_id = 0;
     uint_t count = 0;
-    for (const auto& interval_pair : rare_match_intervals) {
-        Interval new_first_interval = interval_pair.first;
-        Interval new_second_interval = interval_pair.second;
+
+    for (const auto& new_interval : rare_match_intervals) {
         Anchor* new_anchor = new Anchor(new_depth, root);
         root->children.emplace_back(new_anchor);
         // Parallel or sequential execution based on configuration.
         if (use_parallel) {
-            pool.enqueue([this, &pool, new_depth, new_task_id, new_anchor, new_first_interval, new_second_interval]() {
-            this->locateAnchor(pool, new_depth, new_task_id, new_anchor, new_first_interval, new_second_interval);
+            pool.enqueue([this, &pool, new_depth, new_task_id, new_anchor, new_interval]() {
+            this->locateAnchor(pool, new_depth, new_task_id, new_anchor, new_interval);
                 });
         }
         else {
-            locateAnchor(pool, new_depth, new_task_id, new_anchor, new_first_interval, new_second_interval);
+            locateAnchor(pool, new_depth, new_task_id, new_anchor, new_interval);
         }   
         new_task_id++;
         count++;
@@ -432,17 +431,21 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
 
 // Converts rare match pairs to intervals for anchor finding. The function determines
 // intervals between rare matches for further analysis.
-Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_match_pairs, Interval first_interval, Interval second_interval, uint_t fst_length) {
-    // Return early if there are no rare match pairs.
-    if (rare_match_pairs.empty())
-        return {};
+Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_match_pairs, Interval interval, uint_t fst_length) {
     Intervals intervals; // Store the resulting intervals.
 
+    // Return early if there are no rare match pairs.
+    if (rare_match_pairs.empty()) {
+        intervals.emplace_back(interval);
+        return intervals;
+    }
+        
+
     // Initialize starting points and lengths for the first and second sequence segments.
-    uint_t start1 = first_interval.pos;
-    uint_t seq1_length = first_interval.len;
-    uint_t start2 = second_interval.pos + fst_length + 1;
-    uint_t seq2_length = second_interval.len;
+    uint_t start1 = interval.pos1;
+    uint_t seq1_length = interval.len1;
+    uint_t start2 = interval.pos2 + fst_length + 1;
+    uint_t seq2_length = interval.len2;
     uint_t i = 0;
     // Iterate over each rare match pair to calculate intervals.
     for (const auto& pair : rare_match_pairs) {
@@ -455,7 +458,7 @@ Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_matc
         // If current start points are less than or equal to match start points,
         // add the interval to the list and update the start points.
         if (start1 <= match_start1 && start2 <= match_start2) {
-            intervals.push_back({ {start1, match_start1 - start1}, {indexFromGlogalToLocal(start2, fst_length), match_start2 - start2} });
+            intervals.emplace_back(Interval(start1, match_start1 - start1, indexFromGlogalToLocal(start2, fst_length), match_start2 - start2));
         }
         else {
             logger.error() << "There is conflict in final anchors" << std::endl;
@@ -466,24 +469,28 @@ Intervals AnchorFinder::RareMatchPairs2Intervals(const RareMatchPairs& rare_matc
     }
 
     // Calculate and add the final interval after the last match.
-    Interval end1, end2;
+    Interval end;
     if (start1 >= seq1_length) {
         start1--;
-        end1 = { start1, 0 };
+        end.pos1 = start1;
+        end.len1 = 0;
     }
     else {
-        end1 = { start1, seq1_length - start1 };
+        end.pos1 = start1;
+        end.len1 = seq1_length - start1;
     }
         
     if (start2 >= fst_length + 1 + seq2_length) {
         start2--;
-        end2 = { indexFromGlogalToLocal(start2, fst_length), 0 };
+        end.pos2 = indexFromGlogalToLocal(start2, fst_length);
+		end.len2 = 0;
     }
     else {
-        end2 = { indexFromGlogalToLocal(start2, fst_length), fst_length + 1 + seq2_length - start2 };
+        end.pos2 = indexFromGlogalToLocal(start2, fst_length);
+		end.len2 = fst_length + 1 + seq2_length - start2;
     }
         
-    intervals.push_back({ end1, end2 });
+    intervals.emplace_back(end);
     
     return intervals;
 }

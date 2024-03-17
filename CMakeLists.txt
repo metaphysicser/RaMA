@@ -48,7 +48,7 @@ include_directories(${PROJECT_SOURCE_DIR} Anchor Alignment Logging Utils Alignme
 
 
 # 将源代码添加到此项目的可执行文件。
-add_executable (RaMA "RaMA.cpp"  "Anchor/anchor.h" "config.h" "Anchor/gsacak.h" "Utils/kseq.h" "Logging/logging.h" "Alignment/pairwise_alignment.h" "Anchor/rare_match.h" "Utils/threadpool.h" "Utils/utils.h" "Anchor/anchor.cpp" "Anchor/gsacak.c" "Logging/logging.cpp" "Alignment/pairwise_alignment.cpp" "Anchor/rare_match.cpp" "Utils/utils.cpp" "Anchor/RMQ.h" "Anchor/RMQ.cpp")
+add_executable (RaMA "RaMA.cpp"  "Anchor/anchor.h"  "Anchor/gsacak.h" "Utils/kseq.h" "Logging/logging.h" "Alignment/pairwise_alignment.h" "Anchor/rare_match.h" "Utils/threadpool.h" "Utils/utils.h" "Anchor/anchor.cpp" "Anchor/gsacak.c" "Logging/logging.cpp" "Alignment/pairwise_alignment.cpp" "Anchor/rare_match.cpp" "Utils/utils.cpp" "Anchor/RMQ.h" "Anchor/RMQ.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET RaMA PROPERTY CXX_STANDARD 17)

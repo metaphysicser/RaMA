@@ -18,7 +18,7 @@
  // Contact: pingluzhang@outlook.com
  // Created: 2024-03-14
 #pragma once
-#include "config.h"
+
 #include "logging.h"
 #include "utils.h"
 #include "gsacak.h"

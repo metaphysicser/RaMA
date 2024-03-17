@@ -18,7 +18,8 @@
  // Contact: pingluzhang@outlook.com
  // Created: 2024-02-29
 #pragma once
-#include "config.h"
+
+#include "gsacak.h"
 #include "logging.h"
 #include "utils.h"
 #include "anchor.h"
@@ -45,8 +46,6 @@ private:
 	wavefront_aligner_attr_t attributes;
 
 	cigar alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align, const RareMatchPairs& anchors);
-
-	void cigarToAlignment(cigar final_ciagr, const std::vector<SequenceInfo>& data);
 
 	void verifyCigar(const cigar& final_cigar, const std::vector<SequenceInfo>& data);
 

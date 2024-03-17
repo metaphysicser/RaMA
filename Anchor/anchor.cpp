@@ -407,7 +407,6 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
 
     // Recursively explore further intervals with new anchors.
     uint_t new_task_id = 0;
-    uint_t count = 0;
 
     for (const auto& new_interval : rare_match_intervals) {
         Anchor* new_anchor = new Anchor(new_depth, root);
@@ -422,7 +421,6 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
             locateAnchor(pool, new_depth, new_task_id, new_anchor, new_interval);
         }   
         new_task_id++;
-        count++;
     }
     // Log the end of the current task.
     logger.debug() << "Task " << task_id << " of depth " << depth << " ends" << std::endl;

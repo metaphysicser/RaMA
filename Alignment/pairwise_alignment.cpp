@@ -17,6 +17,7 @@
  // Author: Pinglu Zhang
  // Contact: pingluzhang@outlook.com
  // Created: 2024-02-29
+
 # include "pairwise_alignment.h"
 
 // Converts a buffer of CIGAR operations (represented as compact integers) into a vector.

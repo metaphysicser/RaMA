@@ -41,6 +41,8 @@ int main(int argc, char** argv) {
     p.add("-s", "--save", "Save the Anchor binary file to ouput directory.", Mode::BOOLEAN);
     p.add("-l", "--load", "Load the Anchor binary file from ouput directory.", Mode::BOOLEAN);
 
+    p.add("-c", "--max_match_count", "The max count of rare match when finding it.", Mode::OPTIONAL);
+
     p.add("-m", "--match", "The match score for sequence alignment.", Mode::OPTIONAL);
     p.add("-x", "--mismatch", "The mismatch score for sequence alignment.", Mode::OPTIONAL);
     p.add("-g", "--gap_open1", "The gap open score for sequence alignment.", Mode::OPTIONAL);
@@ -60,7 +62,7 @@ int main(int argc, char** argv) {
 
     std::string data_path, output_path;
     bool save, load;
-    uint_t thread_num;
+    uint_t thread_num, max_match_count;
     int_t match, mismatch, gap_open1, gap_open2, gap_extension1, gap_extension2;
 
     try {
@@ -69,6 +71,7 @@ int main(int argc, char** argv) {
         thread_num = args["--threads"].empty()? 0 : std::stoi(args["--threads"]);
         save = args["--save"] == "1";
         load = args["--load"] == "1";
+        max_match_count = getMaxValue(args["--max_match_count"].empty()? 100 : std::stoi(args["--max_match_count"]), 2);
         match = args["--match"].empty()? 0 : std::stoi(args["--match"]);
         mismatch = args["--mismatch"].empty()? 3 : std::stoi(args["--mismatch"]);
         gap_open1 = args["--gap_open1"].empty()? 4 : std::stoi(args["--gap_open1"]);
@@ -92,7 +95,7 @@ int main(int argc, char** argv) {
     RareMatchPairs final_anchors;
 	std::vector<SequenceInfo>* data = new std::vector<SequenceInfo>(readDataPath(data_path.c_str()));
     {
-        AnchorFinder anchor_finder(*data, thread_num, output_path.c_str(), load, save);
+        AnchorFinder anchor_finder(*data, thread_num, output_path.c_str(), load, save, max_match_count);
         final_anchors = anchor_finder.lanuchAnchorSearching();
     }
 

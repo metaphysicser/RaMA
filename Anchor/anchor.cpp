@@ -48,9 +48,10 @@ void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename)
 }
 
 // Constructor for AnchorFinder class
-AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num, std::string save_file_path, bool load_from_disk, bool save_to_disk):
+AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num, std::string save_file_path, bool load_from_disk, bool save_to_disk, uint_t max_match_count):
     thread_num(thread_num),
-    save_file_path(save_file_path){
+    save_file_path(save_file_path),
+    max_match_count(max_match_count) {
     first_seq_len = data[0].seq_len;
     second_seq_len = data[1].seq_len;
     concatSequence(data); // Concatenate sequences from input data
@@ -330,7 +331,6 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
     logger.info() << "Finish searching anchors" << std::endl;
 
     return final_anchors;
-    // return final_anchors;
 }
 
 // Launches the process of locating anchors within given intervals of two sequences.
@@ -395,7 +395,7 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
 
     // Initialize RareMatchFinder and find optimal rare match pairs.
     RareMatchFinder rare_match_finder(concat_data, new_SA, new_LCP, new_DA, first_seq_start, fst_len, second_seq_start,scd_len);
-    RareMatchPairs optimal_pairs = rare_match_finder.findRareMatch(100);
+    RareMatchPairs optimal_pairs = rare_match_finder.findRareMatch(max_match_count);
 
     if (optimal_pairs.empty())
         return;

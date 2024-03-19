@@ -49,7 +49,8 @@ void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename)
 
 // Constructor for AnchorFinder class
 AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num, std::string save_file_path, bool load_from_disk, bool save_to_disk):
-    thread_num(thread_num){
+    thread_num(thread_num),
+    save_file_path(save_file_path){
     first_seq_len = data[0].seq_len;
     second_seq_len = data[1].seq_len;
     concatSequence(data); // Concatenate sequences from input data
@@ -84,9 +85,9 @@ AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num, s
         exit(EXIT_FAILURE);
     }
 
-
-    ensureDirExists(save_file_path);
-    std::string save_file_name = joinPaths(save_file_path, ANCHORFINDER_NAME);
+    std::string bin_file_dir = joinPaths(save_file_path, SAVE_DIR);
+    ensureDirExists(bin_file_dir);
+    std::string save_file_name = joinPaths(bin_file_dir, ANCHORFINDER_NAME);
 
     // Load arrays from disk if specified, otherwise construct the suffix array
     if (load_from_disk && fileExists(save_file_name) && loadFromFile(save_file_name)) {
@@ -319,11 +320,11 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
         locateAnchor(pool, depth, task_id, root, interval); // Fallback to sequential search
     }
     RareMatchPairs first_anchors = root->rare_match_pairs;
-    saveRareMatchPairsToCSV(first_anchors, "/mnt/f/code/vs_code/RaMA/output/first_anchor.csv", first_seq_len);
+    saveRareMatchPairsToCSV(first_anchors, joinPaths(save_file_path, FIRST_ANCHOR_NAME), first_seq_len);
 
     // RareMatchPairs final_anchors = root->mergeRareMatchPairs(); // Merge rare match pairs from the root anchor
     RareMatchPairs final_anchors = verifyAnchors(root->mergeRareMatchPairs()); // Merge rare match pairs from the root anchor
-    saveRareMatchPairsToCSV(final_anchors, "/mnt/f/code/vs_code/RaMA/output/final_anchor.csv", first_seq_len);
+    saveRareMatchPairsToCSV(final_anchors, joinPaths(save_file_path, FINAL_ANCHOR_NAME), first_seq_len);
 
     delete root; // Clean up the root anchor
     logger.info() << "Finish searching anchors" << std::endl;

@@ -28,6 +28,10 @@ extern "C" {
 }
 #include "Alignment/WFA2-lib/bindings/cpp/WFAligner.hpp"
 
+#define INTERVAL_NAME "intervals_need_align.csv"
+#define CIGAR_NAME "cigar.txt"
+#define FASTA_NAME "aligned.fasta"
+
 // Define types for handling CIGAR strings.
 using cigarunit = uint32_t; // Represents a single operation in a CIGAR string.
 using cigar = std::vector<cigarunit>; // Represents a CIGAR string.
@@ -45,6 +49,7 @@ cigar convertToCigarVector(uint32_t* cigar_buffer, int cigar_length);
 // Class for performing pairwise sequence alignment.
 class PairAligner {
 private:
+	std::string save_file_path; // Path to save the fasta and cigar file.
 	// Scoring parameters for sequence alignment.
 	int_t match;
 	int_t mismatch;
@@ -80,7 +85,7 @@ private:
 
 public:
 	// Constructor to initialize the PairAligner with scoring parameters and parallel processing flag.
-	explicit PairAligner(int_t match = 0, int_t mismatch = 3, int_t gap_open1 = 4, int_t gap_extension1 = 2, int_t gap_open2 = 12, int_t gap_extension2 = 1, uint_t thread_num = 0);
+	explicit PairAligner(std::string save_file_path, int_t match = 0, int_t mismatch = 3, int_t gap_open1 = 4, int_t gap_extension1 = 2, int_t gap_open2 = 12, int_t gap_extension2 = 1, uint_t thread_num = 0);
 
 	// Perform pairwise sequence alignment using provided data and optional anchors.
 	void alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors = {});

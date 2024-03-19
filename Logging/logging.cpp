@@ -121,16 +121,20 @@ std::string PerformanceMonitor::getMaxMemory() const {
 
 // Logger constructor: Initializes the logger with specified directory, program name, 
 // whether to add console output, and the maximum log level.
-Logger::Logger(const std::string& _dir, const std::string& _program_name, bool _add_cout, LogLevel _max_level) :
+Logger::Logger(const std::string& _program_name, bool _add_cout, LogLevel _max_level) :
     std::ostream(this), // Initialize the ostream part of this logger to use this instance as the buffer.
-    dir(_dir), // Set the directory where log files will be stored.
-    log_file(joinPaths(dir, (_program_name + ".log"))), // Construct the log file name using the program name.
-    backup_dir(joinPaths(dir, "old_logs/")), // Set the directory for storing backup log files.
+    program_name(_program_name), // Set the program name for constructing log file names.
     add_cout(_add_cout), // Set whether to also output log messages to the console.
     os(new std::ofstream()), // Allocate a new ofstream for log file writing.
     monitor(new PerformanceMonitor()), // Create a new PerformanceMonitor instance for tracking performance metrics.
     cur_level(LogLevel::info), // Set the current log level to INFO by default.
     max_level(_max_level) { // Set the maximum log level for filtering messages.
+}
+
+void Logger::setDir(std::string& dir) {
+    this->dir = dir;
+    this->log_file = joinPaths(dir, (program_name + ".log"));  // Construct the log file name using the program name.
+    this->backup_dir = joinPaths(dir, "old_logs/"); // Set the directory for storing backup log files.
     ensureDirExists(dir); // Ensure the log directory exists.
     ensureDirExists(backup_dir); // Ensure the backup directory exists.
     addNewLog(); // Add a new log entry (and potentially create a new log file).

@@ -68,7 +68,8 @@ void intToCigar(uint32_t cigar, char& operation, uint32_t& len) {
 }
 
 
-PairAligner::PairAligner(int_t match, int_t mismatch, int_t gap_open1, int_t gap_extension1, int_t gap_open2, int_t gap_extension2, uint_t thread_num):
+PairAligner::PairAligner(std::string save_file_path, int_t match, int_t mismatch, int_t gap_open1, int_t gap_extension1, int_t gap_open2, int_t gap_extension2, uint_t thread_num):
+	save_file_path(save_file_path),
 	match(match), 
 	mismatch(mismatch),
 	gap_open1(gap_open1),
@@ -106,19 +107,19 @@ void PairAligner::alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchP
 	Intervals intervals_need_align = AnchorFinder::RareMatchPairs2Intervals(anchors, interval, fst_length);
 
 	// Save the intervals that need alignment to a CSV file for further analysis or debugging.
-	saveIntervalsToCSV(intervals_need_align, "/mnt/f/code/vs_code/RaMA/output/intervals_need_align.csv");
+	saveIntervalsToCSV(intervals_need_align, joinPaths(save_file_path, INTERVAL_NAME));
 
 	// Perform the alignment on the intervals and return the resulting CIGAR string.
 	cigar final_cigar = alignIntervals(data, intervals_need_align, anchors);
 
 	// Save the resulting CIGAR string to a text file.
-	saveCigarToTxt(final_cigar, "/mnt/f/code/vs_code/RaMA/output/final_cigar.txt");
+	saveCigarToTxt(final_cigar, joinPaths(save_file_path, CIGAR_NAME));
 
 	// Optionally, verify the correctness of the generated CIGAR string against the input sequences.
 	// verifyCigar(final_cigar, data);
 
 	// Convert the final CIGAR string to a FASTA format and save it to a file for visualization or further analysis.
-	cigarToFasta(final_cigar, data, "/mnt/f/code/vs_code/RaMA/output/final_alignment.fasta");
+	cigarToFasta(final_cigar, data, joinPaths(save_file_path, FASTA_NAME));
 
 	return; // End of the function.
 }

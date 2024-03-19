@@ -27,7 +27,11 @@
 #include "threadpool.h"
 #include "RMQ.h"
 
+#define SAVE_DIR "save"
 #define ANCHORFINDER_NAME "anchorfinder.bin"
+#define FIRST_ANCHOR_NAME "first_anchor.csv"
+#define FINAL_ANCHOR_NAME "final_anchor.csv"
+
 struct Interval
 {
     uint_t pos1;
@@ -87,6 +91,8 @@ class AnchorFinder : public Serializable {
 private:
     uint_t thread_num; // Indicates whether to use parallel processing
 
+    std::string save_file_path; // Path to the directory where the AnchorFinder state is saved
+
     unsigned char* concat_data; // Concatenated sequence data
 
     uint_t concat_data_length; // Total length of the concatenated data
@@ -129,7 +135,7 @@ private:
 
 public:
     // Constructor initializes AnchorFinder with sequence data and optional parallel processing
-    explicit AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num = 0, std::string save_file_path = "./save/anchorfinder.bin", bool load_from_disk = false, bool save_to_disk = true);
+    explicit AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num = 0, std::string save_file_path, bool load_from_disk = false, bool save_to_disk = true);
 
     // Destructor cleans up allocated resources
     ~AnchorFinder();

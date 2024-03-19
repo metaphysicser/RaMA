@@ -68,6 +68,9 @@ enum LogLevel { error, info, debug };
 // It extends std::streambuf and std::ostream for custom logging behavior.
 class Logger : public std::streambuf, public std::ostream {
 private:
+
+    std::string program_name;
+
     // Directory where log files are stored.
     std::string dir;
 
@@ -95,10 +98,12 @@ private:
 public:
     // Constructor initializes the Logger with a directory for logs, program name,
     // whether to add console output, and the maximum log level.
-    explicit Logger(const std::string& _dir, const std::string& _program_name, bool _add_cout = true, LogLevel _max_level = LogLevel::info);
+    explicit Logger(const std::string& _program_name, bool _add_cout = true, LogLevel _max_level = LogLevel::info);
 
     // Copy constructor is deleted to prevent copying of Logger instances.
     Logger(const Logger&) = delete;
+
+    void setDir(std::string& dir);
 
     // Adds a new log entry, potentially rotating the log file if necessary.
     void addNewLog();

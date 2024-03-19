@@ -32,24 +32,25 @@ extern "C" {
 Logger logger("RaMA", true, info);
 
 int main(int argc, char** argv) {
+    std::ios::sync_with_stdio(false);
+
     Parser p(argc, argv);
-    p.add("-i", "--input", "The path of input fasta data.", Mode::REQUIRED);
-    p.add("-o", "--output", "The path of output directory.", Mode::REQUIRED);
+    p.add("-i", "--input", "Specify the path to the input FASTA file. This file should contain the DNA you wish to align.", Mode::REQUIRED);
+    p.add("-o", "--output", "Define the path to the output directory where all generated files will be saved. This includes alignment results, anchor binary files, and any other output.", Mode::REQUIRED);
 
-    p.add("-t", "--threads", "The number of threads to use.", Mode::OPTIONAL);
+    p.add("-t", "--threads", "Set the number of threads to use during the alignment process. If not specified, the program will use 0 as a default value.", Mode::OPTIONAL);
 
-    p.add("-s", "--save", "Save the Anchor binary file to ouput directory.", Mode::BOOLEAN);
-    p.add("-l", "--load", "Load the Anchor binary file from ouput directory.", Mode::BOOLEAN);
+    p.add("-s", "--save", "Enable this flag to save the anchor binary file to the specified output directory. This can be useful for reusing the SA, LCP, Linear Sparse Table and so on in future alignments without recalculating them.", Mode::BOOLEAN);
+    p.add("-l", "--load", "Enable this flag to load an existing anchor binary file from the specified output directory. This skips the anchor SA, LCP and Linear Sparse Table construction and directly uses the them for finding anchors.", Mode::BOOLEAN);
 
-    p.add("-c", "--max_match_count", "The max count of rare match when finding it.", Mode::OPTIONAL);
+    p.add("-c", "--max_match_count", "Define the maximum number of rare matches to consider when finding anchors. We don't recommend you to reset this value.", Mode::OPTIONAL);
 
-    p.add("-m", "--match", "The match score for sequence alignment.", Mode::OPTIONAL);
-    p.add("-x", "--mismatch", "The mismatch score for sequence alignment.", Mode::OPTIONAL);
-    p.add("-g", "--gap_open1", "The gap open score for sequence alignment.", Mode::OPTIONAL);
-    p.add("-e", "--gap_extension1", "The gap extension score for sequence alignment.", Mode::OPTIONAL);
-    p.add("-G", "--gap_open2", "The gap open score for sequence alignment.", Mode::OPTIONAL);
-    p.add("-E", "--gap_extension2", "The gap extension score for sequence alignment.", Mode::OPTIONAL);
-
+    p.add("-m", "--match", "Sets the score for matching bases in sequence alignment. A higher value increases the incentive for aligning matching characters, enhancing alignment accuracy. This parameter plays a crucial role in balancing between matches and gaps, especially in the context of dual-cost gap-affine distances where the treatment of gaps varies based on their length. Default value is 0.", Mode::OPTIONAL);
+    p.add("-x", "--mismatch", "Defines the penalty for mismatching bases. In the framework of dual-cost gap-affine distances, a higher mismatch penalty disincentivizes the alignment from incorporating mismatches, which is particularly important when considering the alignment's overall strategy towards managing short and long gaps. Default value is 3.", Mode::OPTIONAL);
+    p.add("-g", "--gap_open1", "Specifies the penalty for initiating a short gap in the alignment. This penalty is a key component of the dual-cost gap-affine distance, allowing for a differentiated approach to short and long gaps. A well-calibrated short gap opening penalty can prevent unnecessary fragmentation of the alignment by sporadic mismatches. Default value is 4, reflecting its role as a penalty.", Mode::OPTIONAL);
+    p.add("-e", "--gap_extension1", "Determines the penalty for extending an already existing short gap. This parameter complements the short gap opening penalty by influencing the cost of continuing a gap once it has been opened. Adjusting this penalty allows for fine-tuning the alignment's sensitivity to continuous versus sporadic gaps. Default value is 2, facilitating the extension of gaps that have already been penalized for initiating.", Mode::OPTIONAL);
+    p.add("-G", "--gap_open2", "Similar to --gap_open1 but applies to the initiation of long gaps. In the context of dual-cost gap-affine distances, this penalty differentiates between the costs associated with starting short versus long gaps, acknowledging the distinct challenges posed by longer gaps in sequence alignment. This parameter allows for the strategic management of long gaps, aiming to reduce the fragmentation of the alignment. Default value is 12.", Mode::OPTIONAL);
+    p.add("-E", "--gap_extension2", "Mirrors --gap_extension1 but for extending long gaps. This parameter is crucial for managing the continuity of long gaps once they have been opened, playing a significant role in the dual-cost gap-affine distance approach. By setting a specific penalty for long gap extensions, it provides a mechanism for handling long, continuous gaps more leniently than short gaps, reflecting their different impacts on alignment quality. Default value is 1.", Mode::OPTIONAL);
 
     auto args = p.parse();
 
@@ -89,7 +90,6 @@ int main(int argc, char** argv) {
 
     logger.setDir(output_path);
     logger.info() << "Start RaMA!" << std::endl;
-    std::ios::sync_with_stdio(false);
        
 	// const char* data_path = "/mnt/f/code/vs_code/RaMA/data/human.fasta";
     RareMatchPairs final_anchors;
@@ -106,5 +106,4 @@ int main(int argc, char** argv) {
     logger.info() << "End RaMA!" << std::endl;
 
     return 0;
-
 }

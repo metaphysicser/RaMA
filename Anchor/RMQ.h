@@ -60,11 +60,11 @@ private:
 
     // Builds the precomputed tables for block and sub-block queries
     void buildSubPre();
-    void buildSubPreParallel(); // Parallel version
+    void buildSubPreParallel(uint_t thread_num); // Parallel version
 
     // Builds blocks for the RMQ structure
     void buildBlock();
-    void buildBlockParallel(); // Parallel version
+    void buildBlockParallel(uint_t thread_num); // Parallel version
 
     // Utility functions for block decomposition
     int_t getBelong(int_t i) const;
@@ -75,7 +75,7 @@ public:
     explicit LinearSparseTable() : N(0), block_size(0), block_num(0), LCP(nullptr) {}
 
     // Constructor initializes LCP array and builds RMQ structure
-    explicit LinearSparseTable(int_t* A, uint_t n, bool use_parallel = true);
+    explicit LinearSparseTable(int_t* A, uint_t n, uint_t thread_num = 0);
 
     void setLCP(int_t* A);
 

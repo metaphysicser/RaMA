@@ -85,7 +85,7 @@ struct Anchor {
 
 class AnchorFinder : public Serializable {
 private:
-    bool use_parallel; // Indicates whether to use parallel processing
+    uint_t thread_num; // Indicates whether to use parallel processing
 
     unsigned char* concat_data; // Concatenated sequence data
 
@@ -119,7 +119,7 @@ private:
     void constructISA(uint_t start, uint_t end);
 
     // Constructs the ISA in parallel
-    void constructISAParallel();
+    void constructISAParallel(uint_t thread_num);
 
     // Locates anchors using a given thread pool, recursive depth, and intervals
     void locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, Anchor* root, Interval interval);
@@ -129,7 +129,7 @@ private:
 
 public:
     // Constructor initializes AnchorFinder with sequence data and optional parallel processing
-    explicit AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel = true, std::string save_file_path = "./save/anchorfinder.bin", bool load_from_disk = false, bool save_to_disk = true);
+    explicit AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num = 0, std::string save_file_path = "./save/anchorfinder.bin", bool load_from_disk = false, bool save_to_disk = true);
 
     // Destructor cleans up allocated resources
     ~AnchorFinder();

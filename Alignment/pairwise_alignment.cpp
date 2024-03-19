@@ -68,14 +68,14 @@ void intToCigar(uint32_t cigar, char& operation, uint32_t& len) {
 }
 
 
-PairAligner::PairAligner(int_t match, int_t mismatch, int_t gap_open1, int_t gap_extension1, int_t gap_open2, int_t gap_extension2, bool use_parallel):
+PairAligner::PairAligner(int_t match, int_t mismatch, int_t gap_open1, int_t gap_extension1, int_t gap_open2, int_t gap_extension2, uint_t thread_num):
 	match(match), 
 	mismatch(mismatch),
 	gap_open1(gap_open1),
 	gap_extension1(gap_extension1),
 	gap_open2(gap_open2),
 	gap_extension2(gap_extension2),
-	use_parallel(use_parallel) {
+	thread_num(thread_num) {
 	attributes = wavefront_aligner_attr_default;
 	attributes.distance_metric = gap_affine_2p;
 	attributes.affine2p_penalties.match = match;
@@ -84,12 +84,14 @@ PairAligner::PairAligner(int_t match, int_t mismatch, int_t gap_open1, int_t gap
 	attributes.affine2p_penalties.gap_extension1 = gap_extension1; // E1 > 0
 	attributes.affine2p_penalties.gap_opening2 = gap_open2;  // O2 >= 0
 	attributes.affine2p_penalties.gap_extension2 = gap_extension2; // E2 > 0
-	/*attributes.alignment_scope = compute_alignment;
-	attributes.alignment_form.span = alignment_end2end;
-	attributes.heuristic.strategy = wf_heuristic_wfadaptive;
-	attributes.heuristic.min_wavefront_length = 10;
-	attributes.heuristic.max_distance_threshold = 50;
-	attributes.heuristic.steps_between_cutoffs = 1;*/
+
+	attributes.memory_mode = wavefront_memory_med;
+
+	//attributes.heuristic.strategy = wf_heuristic_wfadaptive;
+	//attributes.heuristic.min_wavefront_length = 10;
+	//attributes.heuristic.max_distance_threshold = 50;
+	//attributes.heuristic.steps_between_cutoffs = 1;
+
 }
 
 // Function to align two sequences based on given rare match pairs (anchors) and save the results.
@@ -464,7 +466,7 @@ void PairAligner::cigarToFasta(const cigar& final_cigar, const std::vector<Seque
 void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align, std::vector<uint_t>& aligned_intervals_index, cigars& aligned_interval_cigar) {
 	// Determine the number of threads available on the hardware for parallel processing.
 	uint_t num_threads = std::thread::hardware_concurrency();
-	ThreadPool pool(num_threads); // Create a thread pool with the determined number of threads.
+	ThreadPool pool(thread_num); // Create a thread pool with the determined number of threads.
 
 	// Iterate through each interval that requires alignment.
 	for (uint_t i = 0; i < aligned_intervals_index.size(); ++i) {
@@ -475,7 +477,7 @@ void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& 
 		std::string seq2 = data[1].sequence.substr(tmp_interval.pos2, tmp_interval.len2);
 
 		// Check if parallel processing is enabled.
-		if (use_parallel) {
+		if (thread_num) {
 			// If parallel processing is enabled, enqueue alignment tasks to the thread pool.
 			pool.enqueue([this, seq1, seq2, &aligned_interval_cigar, index]() {
 				// Create a new wavefront aligner instance with specified attributes.
@@ -503,7 +505,7 @@ void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& 
 		}
 	}
 
-	if (use_parallel) {
+	if (thread_num) {
 		pool.waitAllTasksDone(); // Wait for all alignment tasks in the thread pool to complete.
 	}
 }

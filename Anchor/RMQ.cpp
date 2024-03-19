@@ -60,9 +60,9 @@ void LinearSparseTable::buildSubPre() {
     }
 }
 
-void LinearSparseTable::buildSubPreParallel() {
+void LinearSparseTable::buildSubPreParallel(uint_t thread_num) {
     // Parallel version of buildSubPre using a thread pool for concurrency
-    ThreadPool pool(std::thread::hardware_concurrency());
+    ThreadPool pool(thread_num);
 
     for (uint_t block = 0; block < block_num; ++block) {
         pool.enqueue([this, block]() {
@@ -119,8 +119,8 @@ void LinearSparseTable::buildBlock() {
 //Parallel version of buildBlock using a thread pool for concurrency
 //This method parallelizes the block-based LinearSparseTable preprocessing by dividing the sequence into chunks
 //and processing each chunk in parallel, reducing overall computation time on multicore systems.
-void LinearSparseTable::buildBlockParallel() {
-    ThreadPool pool(std::thread::hardware_concurrency()); // Create a thread pool
+void LinearSparseTable::buildBlockParallel(uint_t thread_num) {
+    ThreadPool pool(thread_num); // Create a thread pool
 
     for (uint_t start = 1; start <= N; start += block_size) {
         pool.enqueue([this, start] {
@@ -144,7 +144,7 @@ void LinearSparseTable::buildBlockParallel() {
     pool.waitAllTasksDone(); // Wait for all tasks to complete
 }
 
-LinearSparseTable::LinearSparseTable(int_t* a, uint_t n, bool use_parallel) {
+LinearSparseTable::LinearSparseTable(int_t* a, uint_t n, uint_t thread_num) {
     LCP = a; // Directly use the provided array for LCP values
     N = n; // Set the total number of elements
     // Initialize vectors with appropriate sizes and default values
@@ -173,9 +173,9 @@ LinearSparseTable::LinearSparseTable(int_t* a, uint_t n, bool use_parallel) {
 
     // Build the sparse table and preprocess LCP array
     buildST();
-    if (use_parallel) { // Choose parallel or sequential preprocessing based on flag
-        buildSubPreParallel();
-        buildBlockParallel();
+    if (thread_num) { // Choose parallel or sequential preprocessing based on flag
+        buildSubPreParallel(thread_num);
+        buildBlockParallel(thread_num);
     }
     else {
         buildSubPre();

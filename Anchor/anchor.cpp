@@ -48,8 +48,8 @@ void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename)
 }
 
 // Constructor for AnchorFinder class
-AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel, std::string save_file_path, bool load_from_disk, bool save_to_disk):
-    use_parallel(use_parallel){
+AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num, std::string save_file_path, bool load_from_disk, bool save_to_disk):
+    thread_num(thread_num){
     first_seq_len = data[0].seq_len;
     second_seq_len = data[1].seq_len;
     concatSequence(data); // Concatenate sequences from input data
@@ -109,7 +109,7 @@ AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel, s
 
         logger.info() << "The sparse table is constructing..." << std::endl;
         try {
-            this->rmq = LinearSparseTable(LCP, concat_data_length, use_parallel);
+            this->rmq = LinearSparseTable(LCP, concat_data_length, thread_num);
             logger.info() << "The sparse table construction is finished!" << std::endl;
         }
         catch (std::exception& e) {
@@ -119,8 +119,8 @@ AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, bool use_parallel, s
         }
         
 
-        if (use_parallel)
-            constructISAParallel();
+        if (thread_num)
+            constructISAParallel(thread_num);
         else
             constructISA(0, concat_data_length - 1);
 
@@ -283,8 +283,8 @@ void AnchorFinder::constructISA(uint_t start, uint_t end) {
 // Constructs the Inverse Suffix Array (ISA) in parallel.
 // This method divides the task of building the ISA array into smaller chunks
 // and processes each chunk in parallel using a thread pool, improving performance on multicore systems.
-void AnchorFinder::constructISAParallel() {
-    ThreadPool pool(std::thread::hardware_concurrency()); // Create a thread pool with a thread for each core
+void AnchorFinder::constructISAParallel(uint_t thread_num) {
+    ThreadPool pool(thread_num); // Create a thread pool with a thread for each core
     const uint_t part_size = getMaxValue(std::ceil(static_cast<double>(concat_data_length) / std::thread::hardware_concurrency()), 1.0); // Calculate chunk size
     uint_t start = 0;
     uint_t end = part_size - 1;
@@ -304,12 +304,12 @@ void AnchorFinder::constructISAParallel() {
 // or executes a single-threaded search.
 RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
     logger.info() << "Begin to search anchors" << std::endl;
-    ThreadPool pool(std::thread::hardware_concurrency()); // Use thread pool for potential parallel execution
+    ThreadPool pool(thread_num); // Use thread pool for potential parallel execution
     uint_t depth = 0;
     Anchor* root = new Anchor(depth); // Create root anchor node
     Interval interval(0, first_seq_len, 0, second_seq_len); // Define interval
     uint_t task_id = 0;
-    if (use_parallel) {
+    if (thread_num) {
         pool.enqueue([this, &pool, depth, task_id, root, interval]() { 
             this->locateAnchor(pool, depth, task_id, root, interval);
             });
@@ -412,7 +412,7 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
         Anchor* new_anchor = new Anchor(new_depth, root);
         root->children.emplace_back(new_anchor);
         // Parallel or sequential execution based on configuration.
-        if (use_parallel) {
+        if (thread_num) {
             pool.enqueue([this, &pool, new_depth, new_task_id, new_anchor, new_interval]() {
             this->locateAnchor(pool, new_depth, new_task_id, new_anchor, new_interval);
                 });

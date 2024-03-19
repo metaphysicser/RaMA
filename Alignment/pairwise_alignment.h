@@ -53,7 +53,7 @@ private:
 	int_t gap_open2;
 	int_t gap_extension2;
 
-	bool use_parallel; // Flag to enable parallel processing.
+	uint_t thread_num; // Flag to enable parallel processing.
 
 	wavefront_aligner_attr_t attributes; // Attributes for the wavefront aligner.
 
@@ -80,7 +80,7 @@ private:
 
 public:
 	// Constructor to initialize the PairAligner with scoring parameters and parallel processing flag.
-	explicit PairAligner(int_t match = 0, int_t mismatch = 3, int_t gap_open1 = 4, int_t gap_extension1 = 2, int_t gap_open2 = 12, int_t gap_extension2 = 1, bool use_parallel = true);
+	explicit PairAligner(int_t match = 0, int_t mismatch = 3, int_t gap_open1 = 4, int_t gap_extension1 = 2, int_t gap_open2 = 12, int_t gap_extension2 = 1, uint_t thread_num = 0);
 
 	// Perform pairwise sequence alignment using provided data and optional anchors.
 	void alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors = {});

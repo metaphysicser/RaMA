@@ -37,22 +37,6 @@ std::string PerformanceMonitor::getPerformanceMetrics() {
         << std::setw(2) << (elapsed / 60) % 60 << ":"
         << std::setw(2) << elapsed % 60 << " ";
 
-    // Platform-specific memory usage retrieval.
-#if defined(_WIN32) || defined(_WIN64)
-    PROCESS_MEMORY_COUNTERS memCounter;
-    // Attempt to get the current process's memory usage on Windows.
-    if (GetProcessMemoryInfo(GetCurrentProcess(), &memCounter, sizeof(memCounter))) {
-        // Format and append memory usage to the string stream.
-        ss << formatMemoryUsage(memCounter.WorkingSetSize);
-        // Update max_memory if the current usage is greater.
-        if (memCounter.WorkingSetSize > max_memory) {
-            max_memory = memCounter.WorkingSetSize;
-        }
-    }
-    else {
-        ss << "Memory usage unavailable"; // Handle case where memory info cannot be retrieved.
-    }
-#else
     struct rusage usage;
     // Attempt to get the current process's memory usage on Unix/Linux.
     if (getrusage(RUSAGE_SELF, &usage) == 0) {
@@ -66,7 +50,7 @@ std::string PerformanceMonitor::getPerformanceMetrics() {
     else {
         ss << "Memory usage unavailable"; // Handle case where memory info cannot be retrieved.
     }
-#endif
+
 
     return ss.str(); // Return the formatted string.
     }

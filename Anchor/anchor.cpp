@@ -48,9 +48,9 @@ void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename)
 }
 
 // Constructor for AnchorFinder class
-AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num, std::string save_file_path, bool load_from_disk, bool save_to_disk, uint_t max_match_count):
-    thread_num(thread_num),
+AnchorFinder::AnchorFinder(std::vector<SequenceInfo>& data, std::string save_file_path, uint_t thread_num, bool load_from_disk, bool save_to_disk, uint_t max_match_count):
     save_file_path(save_file_path),
+    thread_num(thread_num),
     max_match_count(max_match_count) {
     first_seq_len = data[0].seq_len;
     second_seq_len = data[1].seq_len;

@@ -137,7 +137,7 @@ private:
 
 public:
     // Constructor initializes AnchorFinder with sequence data and optional parallel processing
-    explicit AnchorFinder(std::vector<SequenceInfo>& data, uint_t thread_num = 0, std::string save_file_path, bool load_from_disk = false, bool save_to_disk = true, uint_t max_match_count);
+    explicit AnchorFinder(std::vector<SequenceInfo>& data, std::string save_file_path, uint_t thread_num = 0, bool load_from_disk = false, bool save_to_disk = true, uint_t max_match_count = 100);
 
     // Destructor cleans up allocated resources
     ~AnchorFinder();

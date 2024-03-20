@@ -127,14 +127,18 @@ void ensureFileExists(const std::string& path);
 // This is a utility function used to verify the existence of files before attempting to read from or write to them.
 bool fileExists(const std::string& path);
 
-std::string joinPaths(const std::string& path1, const std::string& path2); 
+// Joins two file paths, ensuring the correct path separators are used.
+std::string joinPaths(const std::string& path1, const std::string& path2);
 
+// Returns the smaller of two values.
 template<typename T>
 T getMinValue(const T& a, const T& b) {
-    return (a < b) ? a : b;
+    return (a < b) ? a : b; // If 'a' is less than 'b', return 'a'; otherwise, return 'b'
 }
 
+// Returns the larger of two values.
 template<typename T>
 T getMaxValue(const T& a, const T& b) {
-    return (a > b) ? a : b;
+    return (a > b) ? a : b; // If 'a' is greater than 'b', return 'a'; otherwise, return 'b'
 }
+

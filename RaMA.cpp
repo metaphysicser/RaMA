@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 
     p.add("-c", "--max_match_count", "Maximum number of rare matches to use for anchor finding. Altering this value is generally not recommended.", Mode::OPTIONAL);
 
-    p.add("-m", "--match", "Match score for sequence alignment. Higher values favor matching characters. Default is 0.", Mode::OPTIONAL);
+    p.add("-m", "--match", "Match score for sequence alignment. Lower values favor matching characters. Default is 0.", Mode::OPTIONAL);
     p.add("-x", "--mismatch", "Mismatch penalty. Higher values penalize mismatches more. Default is 3.", Mode::OPTIONAL);
     p.add("-g", "--gap_open1", "Penalty for initiating a short gap. Key for handling different gap lengths. Default is 4.", Mode::OPTIONAL);
     p.add("-e", "--gap_extension1", "Penalty for extending a short gap. Less severe than gap opening penalty. Default is 2.", Mode::OPTIONAL);

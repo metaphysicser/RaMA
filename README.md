@@ -38,7 +38,7 @@ Execute RaMA by specifying the input FASTA file and the output directory:
 
 ### Detailed Usage
 Control RaMA's behavior with the following arguments:
-~~~
+~~~plaintext
 Arguments:
     -h, --help               Show this help message and exit 
     -i, --input              Input FASTA file path containing the sequences for alignment.
@@ -47,7 +47,7 @@ Arguments:
     -s, --save               Saves anchor binary files to the output directory for future use, including SA, LCP, and Linear Sparse Table.
     -l, --load               Loads existing anchor binary files from the output directory to skip SA, LCP, and Linear Sparse Table construction.
     -c, --max_match_count    Maximum number of rare matches to use for anchor finding. Altering this value is generally not recommended.
-    -m, --match              Match score for sequence alignment. Higher values favor matching characters. Default is 0.
+    -m, --match              Match score for sequence alignment. Lower values favor matching characters. Default is 0.
     -x, --mismatch           Mismatch penalty. Higher values penalize mismatches more. Default is 3.
     -g, --gap_open1          Penalty for initiating a short gap. Key for handling different gap lengths. Default is 4.
     -e, --gap_extension1     Penalty for extending a short gap. Less severe than gap opening penalty. Default is 2.
@@ -62,4 +62,11 @@ Arguments:
 [Apache 2.0](https://github.com/metaphysicser/RaMA/blob/master/LICENSE) © [[MALABZ_UESTC](https://github.com/malabz) [Pinglu Zhang](https://github.com/metaphysicser)]
 
 ## Contact
-For questions and feedback, please reach out to us at [pingluzhang@outlook.com](pingluzhang@outlook.com).
+## Contact
+
+RaMA is actively developed and maintained by [ZOU's Lab](https://github.com/malabz). For any questions, feedback, or support, we encourage you to connect with us:
+
+- **Issue Tracker**: For reporting bugs, suggesting enhancements, or requesting features, please use our [GitHub Issues](https://github.com/metaphysicser/RaMA/issues).
+- **Email**: For direct communication, you can reach out to Pinglu Zhang at [pingluzhang@outlook.com](mailto:pingluzhang@outlook.com).
+
+We welcome your input and appreciate your contributions to making RaMA better!

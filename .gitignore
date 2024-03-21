@@ -7,3 +7,5 @@
 /output
 /result.txt
 /build
+/CMakePresets.json
+/CppProperties.json

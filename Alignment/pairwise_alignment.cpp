@@ -465,9 +465,8 @@ void PairAligner::cigarToFasta(const cigar& final_cigar, const std::vector<Seque
 
 // Function to align sequences within specified intervals using the wavefront alignment method.
 void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align, std::vector<uint_t>& aligned_intervals_index, cigars& aligned_interval_cigar) {
-	// Determine the number of threads available on the hardware for parallel processing.
-	uint_t num_threads = std::thread::hardware_concurrency();
 	ThreadPool pool(thread_num); // Create a thread pool with the determined number of threads.
+	logger.info() << "Begin to align intervals using wavefront alignment method." << std::endl;
 
 	// Iterate through each interval that requires alignment.
 	for (uint_t i = 0; i < aligned_intervals_index.size(); ++i) {
@@ -509,6 +508,7 @@ void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& 
 	if (thread_num) {
 		pool.waitAllTasksDone(); // Wait for all alignment tasks in the thread pool to complete.
 	}
+	logger.info() << "Wavefront alignment of intervals has been completed." << std::endl;
 }
 
 

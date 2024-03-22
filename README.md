@@ -56,12 +56,9 @@ Arguments:
 ~~~
 **Note**: The -i (input) and -o (output) parameters are required. For most users, the default settings are recommended, but feel free to adjust them as needed.
 
-## Citation
-
 ## License
 [Apache 2.0](https://github.com/metaphysicser/RaMA/blob/master/LICENSE) © [[MALABZ_UESTC](https://github.com/malabz) [Pinglu Zhang](https://github.com/metaphysicser)]
 
-## Contact
 ## Contact
 
 RaMA is actively developed and maintained by [ZOU's Lab](https://github.com/malabz). For any questions, feedback, or support, we encourage you to connect with us:

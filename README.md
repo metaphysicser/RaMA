@@ -1,7 +1,7 @@
 ﻿# RaMA
 
 ## Requirements
-Before installing RaMA, ensure your system meets the following requirements:
+Before installing RaMA, ensure your **Linux** system meets the following requirements:
 - GCC version 9 or higher. (**Required**)
 - CMake version 3.1 or higher. (**Required**)
 

@@ -12,6 +12,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_L
   message(FATAL_ERROR "GCC version must be at least 9 for full C++17 support.")
 endif()
 
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+
 # Automatically detect and enable OpenMP support.
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)

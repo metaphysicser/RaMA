@@ -16,17 +16,17 @@ Navigate to the RaMA directory, create a build directory, and compile the progra
 ~~~sh
 cd RaMA 
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 ~~~
 Compilation Flags
 Customize your build with additional flags if necessary:
 ~~~sh
 # Enable 64-bit mode
-cmake .. -DUSE_M64=ON
+cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_M64=ON
 
 # Use extra compiler flags, e.g., for AVX2 support
-cmake .. -DEXTRA_FLAGS="-mavx2"
+cmake .. -DCMAKE_BUILD_TYPE=Release -DEXTRA_FLAGS="-mavx2"
 ~~~
 
 ## How to use RaMA
@@ -66,4 +66,3 @@ RaMA is actively developed and maintained by [ZOU's Lab](https://github.com/mala
 - **Issue Tracker**: For reporting bugs, suggesting enhancements, or requesting features, please use our [GitHub Issues](https://github.com/metaphysicser/RaMA/issues).
 - **Email**: For direct communication, you can reach out to Pinglu Zhang at [pingluzhang@outlook.com](mailto:pingluzhang@outlook.com).
 
-We welcome your input and appreciate your contributions to making RaMA better!

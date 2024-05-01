@@ -109,7 +109,7 @@ struct SequenceInfo {
 
 // Reads sequence data from a specified file path and returns a vector of SequenceInfo objects.
 // This function is typically used to read data in FASTA format.
-std::vector<SequenceInfo> readDataPath(const char* data_path);
+std::vector<SequenceInfo> readDataPath(const char* ref_path, const char* query_path);
 
 // Replaces all occurrences of the character 'N' in a given sequence string with a random nucleotide letter (A, C, G, or T).
 // This is useful for dealing with unknown or ambiguous nucleotide bases in DNA sequences.

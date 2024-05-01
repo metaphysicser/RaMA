@@ -35,7 +35,9 @@ int main(int argc, char** argv) {
     std::ios::sync_with_stdio(false);
 
     Parser p(argc, argv);
-    p.add("-i", "--input", "Input FASTA file path containing the sequences for alignment.", Mode::REQUIRED);
+   
+    p.add("-r", "--reference", "Reference FASTA file path containing the reference sequences for alignment.", Mode::REQUIRED);
+    p.add("-q", "--query", "Query FASTA file path containing the query sequences for alignment.", Mode::REQUIRED);
     p.add("-o", "--output", "Output directory path for saving alignment results and additional files.", Mode::REQUIRED);
 
     p.add("-t", "--threads", "Number of threads for the alignment process. Defaults to the number of available cores if unspecified.", Mode::OPTIONAL);
@@ -65,14 +67,15 @@ int main(int argc, char** argv) {
     }
 
     // Initialize variables for storing command line arguments
-    std::string data_path, output_path;
+    std::string ref_path, query_path, output_path;
     bool save, load;
     uint_t thread_num, max_match_count;
     int_t match, mismatch, gap_open1, gap_open2, gap_extension1, gap_extension2;
 
     try {
         // Assign the parsed values to variables, with defaults where necessary
-        data_path = args["--input"];
+        ref_path = args["--reference"];
+        query_path = args["--query"];
         output_path = args["--output"];
         thread_num = args["--threads"].empty() ? std::thread::hardware_concurrency() : std::stoi(args["--threads"]);
         save = args["--save"] == "1";
@@ -100,7 +103,7 @@ int main(int argc, char** argv) {
 
     RareMatchPairs final_anchors;
     // Load sequences from the input data path
-    std::vector<SequenceInfo>* data = new std::vector<SequenceInfo>(readDataPath(data_path.c_str()));
+    std::vector<SequenceInfo>* data = new std::vector<SequenceInfo>(readDataPath(ref_path.c_str(), query_path.c_str()));
     {
         // Initialize AnchorFinder with the provided arguments and find anchors
         AnchorFinder anchor_finder(*data, output_path.c_str(), thread_num, load, save, max_match_count);
@@ -122,5 +125,4 @@ int main(int argc, char** argv) {
 
     // Return success
     return 0;
-
 }

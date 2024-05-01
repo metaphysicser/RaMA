@@ -33,7 +33,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DEXTRA_FLAGS="-mavx2"
 ### General Usage
 Execute RaMA by specifying the input FASTA file and the output directory:
 ~~~sh
-./RaMA -i /path/to/input.fasta -o /path/to/output_dir
+./RaMA -r /path/to/ref.fasta -q /path/to/query.fasta -o /path/to/output_dir
 ~~~
 
 ### Detailed Usage

@@ -24,6 +24,7 @@
 
 #include <deque>
 #include <map>
+#include <cmath> 
 
 // Structure to represent a rare match, including counts of occurrences in the first and second sequences,
 // the length of the match, positions of the match, and the type of positions (first or second sequence).
@@ -61,7 +62,7 @@ struct RareMatchPair {
     uint_t first_pos; // Starting position in the first sequence.
     uint_t second_pos; // Starting position in the second sequence.
     uint_t match_length; // Length of the match.
-    uint_t weight; // Weight for scoring the match pair.
+    double weight; // Weight for scoring the match pair.
 
     // Operator overloading for sorting based on first and second positions.
     bool operator<(const RareMatchPair& other) const {
@@ -157,7 +158,7 @@ private:
     uint_t leftExpand(std::vector<uint_t>& match_pos, uint_t match_length);
 
     // Converts the rare match map to pairs for further processing.
-    static RareMatchPairs convertMapToPairs(const RareMatchMap& rare_match_map);
+    RareMatchPairs convertMapToPairs(const RareMatchMap& rare_match_map);
 
     // Finds optimal pairs from given rare match pairs based on specific criteria.
     RareMatchPairs findOptimalPairs(const RareMatchPairs& rare_match_pairs);

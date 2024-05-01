@@ -367,7 +367,14 @@ RareMatchPairs RareMatchFinder::convertMapToPairs(const RareMatchMap& rare_match
         for (auto first_pos : first_seq_positions) {
             for (auto second_pos : second_seq_positions) {
                 // The weight of each pair is calculated based on the match length and the counts of matches in each sequence.
-                uint_t weight = match.match_length / (match.first_count * match.second_count);
+                // double weight = match.match_length / (match.first_count * match.second_count);
+                double weight = 1 / (match.first_count * match.second_count);
+                if ((first_pos - this->first_seq_start) > (second_pos - this->second_seq_start)) {
+                    weight -= ((first_pos - this->first_seq_start) - (second_pos - this->second_seq_start)) / (this->first_seq_len + this->second_seq_len);
+                } else {
+                    weight -= ((second_pos - this->second_seq_start) - (first_pos - this->first_seq_start)) / (this->first_seq_len + this->second_seq_len);
+                }
+                weight = getMaxValue(weight, 0.0);
                 pairs.emplace_back(RareMatchPair{
                     first_pos,
                     second_pos,

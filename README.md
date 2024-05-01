@@ -41,7 +41,8 @@ Control RaMA's behavior with the following arguments:
 ~~~plaintext
 Arguments:
     -h, --help               Show this help message and exit 
-    -i, --input              Input FASTA file path containing the sequences for alignment.
+    -r, --reference          Reference FASTA file path containing the reference sequences for alignment.
+    -q, --query              Query FASTA file path containing the query sequences for alignment.
     -o, --output             Output directory path for saving alignment results and additional files.
     -t, --threads            Number of threads for the alignment process. Defaults to the number of available cores if unspecified.
     -s, --save               Saves anchor binary files to the output directory for future use, including SA, LCP, and Linear Sparse Table.
@@ -54,7 +55,7 @@ Arguments:
     -G, --gap_open2          Penalty for initiating a long gap. Aims to manage long gaps strategically. Default is 12.
     -E, --gap_extension2     Penalty for extending a long gap. Provides a lenient approach to long gap management. Default is 1.
 ~~~
-**Note**: The -i (input) and -o (output) parameters are required. For most users, the default settings are recommended, but feel free to adjust them as needed.
+**Note**: The -r -q (input) and -o (output) parameters are required. For most users, the default settings are recommended, but feel free to adjust them as needed.
 
 ## License
 [Apache 2.0](https://github.com/metaphysicser/RaMA/blob/master/LICENSE) © [[MALABZ_UESTC](https://github.com/malabz) [Pinglu Zhang](https://github.com/metaphysicser)]

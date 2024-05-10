@@ -1,4 +1,5 @@
 ﻿# RaMA
+![Platforms](https://anaconda.org/malab/rama/badges/platforms.svg) ![last_release](https://anaconda.org/malab/rama/badges/latest_release_date.svg) ![license](https://anaconda.org/malab/rama/badges/license.svg)
 
 ## Requirements
 Before installing RaMA, ensure your **Linux** system meets the following requirements:
@@ -6,18 +7,31 @@ Before installing RaMA, ensure your **Linux** system meets the following require
 - CMake version 3.1 or higher. (**Required**)
 
 ## Get Started
-### Clone the Repository
+RaMA can be installed using two methods: via conda or by compiling the source code. 
+- If you want to quickly get started with RaMA, we highly recommend using the conda installation method. 
+- if you prefer to customize RaMA, such as enabling M64 mode to handle ultra-large-scale data (not generally recommended) or using different instruction sets to accelerate alignment, we suggest installing from the source code.
+### Install via conda
+We highly recommand you install RaMA via conda. Simply run the following command:
+~~~
+conda create -n RaMA
+conda activate RaMA
+conda install malab::rama
+RaMA -h
+~~~
+### Install via source code
+#### Clone the Repository
 Start by cloning the RaMA repository along with its submodules. Ensure that `Alignment/WFA2-lib` is downloaded properly:
 ~~~sh
 git clone --recursive https://github.com/metaphysicser/RaMA.git
 ~~~
-### Compilation
+#### Compilation
 Navigate to the RaMA directory, create a build directory, and compile the program:
 ~~~sh
 cd RaMA 
 mkdir build && cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
+./RaMA -h
 ~~~
 Compilation Flags
 Customize your build with additional flags if necessary:
@@ -33,7 +47,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DEXTRA_FLAGS="-mavx2"
 ### General Usage
 Execute RaMA by specifying the input FASTA file and the output directory:
 ~~~sh
-./RaMA -r /path/to/ref.fasta -q /path/to/query.fasta -o /path/to/output_dir
+RaMA -r /path/to/ref.fasta -q /path/to/query.fasta -o /path/to/output_dir
 ~~~
 
 ### Detailed Usage

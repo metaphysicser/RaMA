@@ -9,3 +9,5 @@
 /build
 /CMakePresets.json
 /CppProperties.json
+/.idea
+/RaMA_env

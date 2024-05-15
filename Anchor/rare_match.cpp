@@ -368,13 +368,13 @@ RareMatchPairs RareMatchFinder::convertMapToPairs(const RareMatchMap& rare_match
             for (auto second_pos : second_seq_positions) {
                 // The weight of each pair is calculated based on the match length and the counts of matches in each sequence.
                 // double weight = match.match_length / (match.first_count * match.second_count);
-                double weight = 1 / (match.first_count * match.second_count);
-                if ((first_pos - this->first_seq_start) > (second_pos - this->second_seq_start)) {
+                double weight = match.match_length / getMinValue(match.first_count, match.second_count);
+                /*if ((first_pos - this->first_seq_start) > (second_pos - this->second_seq_start)) {
                     weight -= ((first_pos - this->first_seq_start) - (second_pos - this->second_seq_start)) / (this->first_seq_len + this->second_seq_len);
                 } else {
                     weight -= ((second_pos - this->second_seq_start) - (first_pos - this->first_seq_start)) / (this->first_seq_len + this->second_seq_len);
                 }
-                weight = getMaxValue(weight, 0.0);
+                weight = getMaxValue(weight, 0.0);*/
                 pairs.emplace_back(RareMatchPair{
                     first_pos,
                     second_pos,
@@ -386,6 +386,15 @@ RareMatchPairs RareMatchFinder::convertMapToPairs(const RareMatchMap& rare_match
     }
 
     return pairs; // Return the resulting vector of rare match pairs.
+}
+
+
+double gapCost(uint_t first_gap, uint_t second_gap) {
+    if (first_gap - second_gap == 0)
+        return 0;
+    else
+        return 2 * std::log2(std::abs(static_cast<int>(first_gap - second_gap)) + 1);
+        /*return 0.01 * avg_seed_length * std::abs(static_cast<int>(first_gap - second_gap)) + 0.5 * std::log2(std::abs(static_cast<int>(first_gap - second_gap)) + 1);*/
 }
 
 // Finds the optimal sequence of rare match pairs based on a dynamic programming approach that maximizes the total weight.
@@ -403,10 +412,18 @@ RareMatchPairs RareMatchFinder::findOptimalPairs(const RareMatchPairs& rare_matc
     for (uint_t i = 1; i < rare_match_pairs.size(); ++i) {
         scores[i] = rare_match_pairs[i].weight; // Start with the current pair's weight.
         for (int_t j = i - 1; j >= 0; --j) {
+            
             // Check if current pair can follow the pair at j without overlap and if it improves the score.
             if (rare_match_pairs[i].first_pos >= rare_match_pairs[j].first_pos + rare_match_pairs[j].match_length &&
                 rare_match_pairs[i].second_pos >= rare_match_pairs[j].second_pos + rare_match_pairs[j].match_length) {
-                double new_score = scores[j] + rare_match_pairs[i].weight;
+                uint_t first_gap = rare_match_pairs[i].first_pos - rare_match_pairs[j].first_pos;
+                uint_t second_gap = rare_match_pairs[i].second_pos - rare_match_pairs[j].second_pos;
+                double gap_cost = gapCost(first_gap, second_gap);
+                double new_score = scores[j];
+                if(rare_match_pairs[i].weight - gap_cost > 0)
+                    new_score = scores[j] + rare_match_pairs[i].weight - gap_cost;
+                else
+                    new_score = scores[j] + 0.1;
                 if (new_score > scores[i]) {
                     scores[i] = new_score; // Update score if it's higher with the current combination.
                     backtracks[i] = j; // Record the backtrack index.

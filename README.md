@@ -1,10 +1,6 @@
 ﻿# RaMA
 ![Platforms](https://anaconda.org/malab/rama/badges/platforms.svg) ![last_release](https://anaconda.org/malab/rama/badges/latest_release_date.svg) ![license](https://anaconda.org/malab/rama/badges/license.svg)
 
-## Requirements
-Before installing RaMA, ensure your **Linux** system meets the following requirements:
-- GCC version 9 or higher. (**Required**)
-- CMake version 3.1 or higher. (**Required**)
 
 ## Get Started
 RaMA can be installed using two methods: via conda or by compiling the source code. 
@@ -19,6 +15,11 @@ conda install malab::rama
 RaMA -h
 ~~~
 ### Install via source code
+
+#### Requirements
+Before installing RaMA, ensure your **Linux** system meets the following requirements:
+- GCC version 9 or higher. (**Required**)
+- CMake version 3.1 or higher. (**Required**)
 #### Clone the Repository
 Start by cloning the RaMA repository along with its submodules. Ensure that `Alignment/WFA2-lib` is downloaded properly:
 ~~~sh

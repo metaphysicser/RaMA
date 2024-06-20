@@ -109,7 +109,8 @@ int main(int argc, char** argv) {
         AnchorFinder anchor_finder(*data, output_path.c_str(), thread_num, load, save, max_match_count);
         final_anchors = anchor_finder.lanuchAnchorSearching();
     }
-
+    // final_anchors.clear();
+    // std::cout << final_anchors.size() << std::endl;
     // Initialize PairAligner with the parsed arguments and align the sequences
     PairAligner pair_aligner(output_path, match, mismatch, gap_open1, gap_extension1, gap_open2, gap_extension2, thread_num);
     pair_aligner.alignPairSeq(*data, final_anchors);

@@ -78,6 +78,12 @@ PairAligner::PairAligner(std::string save_file_path, int_t match, int_t mismatch
 	gap_extension2(gap_extension2),
 	thread_num(thread_num) {
 	attributes = wavefront_aligner_attr_default;
+
+	//attributes.distance_metric = gap_affine;
+	//attributes.affine_penalties.mismatch = 2;      // X > 0
+	//attributes.affine_penalties.gap_opening = 3;   // O >= 0
+	//attributes.affine_penalties.gap_extension = 1; // E > 0
+
 	attributes.distance_metric = gap_affine_2p;
 	attributes.affine2p_penalties.match = match;
 	attributes.affine2p_penalties.mismatch = mismatch;       // X > 0

@@ -54,7 +54,6 @@ int main(int argc, char** argv) {
     p.add("-G", "--gap_open2", "Penalty for initiating a long gap. Aims to manage long gaps strategically. Default is 12.", Mode::OPTIONAL);
     p.add("-E", "--gap_extension2", "Penalty for extending a long gap. Provides a lenient approach to long gap management. Default is 1.", Mode::OPTIONAL);
 
-
     // Parse the command line arguments using the Parser instance
     auto args = p.parse();
 

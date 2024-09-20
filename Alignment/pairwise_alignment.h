@@ -31,6 +31,7 @@ extern "C" {
 #define INTERVAL_NAME "intervals_need_align.csv"
 #define CIGAR_NAME "cigar.txt"
 #define FASTA_NAME "aligned.fasta"
+#define CONFIDENCE_CSV "confidence.csv"
 
 // Define types for handling CIGAR strings.
 using cigarunit = uint32_t; // Represents a single operation in a CIGAR string.

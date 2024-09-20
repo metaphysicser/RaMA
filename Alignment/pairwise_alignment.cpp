@@ -68,9 +68,9 @@ void intToCigar(uint32_t cigar, char& operation, uint32_t& len) {
 }
 
 
-PairAligner::PairAligner(std::string save_file_path, int_t match, int_t mismatch, int_t gap_open1, int_t gap_extension1, int_t gap_open2, int_t gap_extension2, uint_t thread_num):
+PairAligner::PairAligner(std::string save_file_path, int_t match, int_t mismatch, int_t gap_open1, int_t gap_extension1, int_t gap_open2, int_t gap_extension2, uint_t thread_num) :
 	save_file_path(save_file_path),
-	match(match), 
+	match(match),
 	mismatch(mismatch),
 	gap_open1(gap_open1),
 	gap_extension1(gap_extension1),
@@ -266,7 +266,7 @@ void PairAligner::verifyCigar(const cigar& final_cigar, const std::vector<Sequen
 	for (const auto& unit : final_cigar) {
 		char operation;
 		uint32_t len;
-		
+
 		intToCigar(unit, operation, len); // Convert each cigar unit back to operation and length
 
 		switch (operation) {
@@ -372,17 +372,46 @@ cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar
 	cigar final_cigar;
 	auto anchor_cigar = anchors.begin();
 
+	std::string confidence_csv = joinPaths(save_file_path, CONFIDENCE_CSV);
+
+	std::ofstream csv_file(confidence_csv);
+	if (!csv_file.is_open()) {
+		logger.error() << "Error opening file " << confidence_csv << std::endl;
+	}
+	csv_file << "cigar,confidence,rare match\n";
+
 	// Iterate through each cigar vector and add its units to the final_cigar vector.
 	// Also intersperse 'anchor' operations between the cigar vectors.
 	for (const auto& single_cigar : aligned_interval_cigar) {
-		for (const auto& unit : single_cigar) {
-			final_cigar.push_back(unit);
+		if (single_cigar.size() == 1) {
+			char operation;
+			uint32_t len;
+			intToCigar(single_cigar[0], operation, len);
+			if (len > 0) {
+				csv_file << len << operation << "," << 1 << "," << 0 << "\n";
+				final_cigar.push_back(single_cigar[0]);
+			}
+
 		}
+		else {
+			for (const auto& unit : single_cigar) {
+				char operation;
+				uint32_t len;
+				intToCigar(unit, operation, len);
+				if (len > 0) {
+					csv_file << len << operation << "," << 0 << "," << 0 << "\n";
+					final_cigar.push_back(unit);
+				}
+			}
+		}
+
 		// If there's an anchor, add an '=' operation with its match_length.
 		if (anchor_cigar != anchors.end()) {
 			final_cigar.push_back(cigarToInt('=', anchor_cigar->match_length));
+			csv_file << anchor_cigar->match_length << "=," << 1 << "," << 1 << "\n";
 			++anchor_cigar;
 		}
+
 	}
 
 	// Remove zero-length operations from the start of the final_cigar, if present.
@@ -404,7 +433,7 @@ cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar
 			final_cigar.pop_back();
 		}
 	}
-
+	csv_file.close();
 	return final_cigar;
 }
 

@@ -24,7 +24,6 @@
 #include "gsacak.h"
 #include "rare_match.h"
 #include "threadpool.h"
-#include "kthread.h"
 #include <algorithm>
 
 #define MAXM 32

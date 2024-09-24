@@ -11,3 +11,6 @@
 /CppProperties.json
 /.idea
 /RaMA_env
+/conda
+/out/Ubuntu/build/linux-debug
+/Visualization

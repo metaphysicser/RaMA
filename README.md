@@ -72,6 +72,26 @@ Arguments:
 ~~~
 **Note**: The -r -q (input) and -o (output) parameters are required. For most users, the default settings are recommended, but feel free to adjust them as needed.
 
+## Output Files
+After running RaMA, the following output files will be generated in the specified output directory:
+
+1. **aligned.fasta**: Alignment results in FASTA format.
+2. **cigar.txt**: Alignment results in CIGAR format.
+3. **confidence.csv**: Contains information about the alignment confidence and rare matches.We define a rare match as an alignment with high confidence. Furthermore, if the alignment result between rare matches consists of a simple insertion, simple deletion, or a perfect match, this interval is also considered a confident alignment. Example content:
+   ```plaintext
+   cigar    confidence    rare match
+   1178I    1             0
+   326=     1             1
+   1X       1             0
+   1073=    1             1
+   1X       1             0
+- confidence: Indicates whether the alignment is considered reliable.
+- rare match: Indicates if the corresponding CIGAR is a rare match.
+4. first_anchor.csv: Rare match anchors obtained during the first iteration.
+5. final_anchor.csv: All rare match anchors after the final iteration.
+6. intervals_need_align.csv: Regions that require wavefront alignment.
+7. RaMA.log: Contains information about the alignment process.
+
 ## License
 [Apache 2.0](https://github.com/metaphysicser/RaMA/blob/master/LICENSE) © [[MALABZ_UESTC](https://github.com/malabz) [Pinglu Zhang](https://github.com/metaphysicser)]
 

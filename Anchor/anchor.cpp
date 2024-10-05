@@ -20,6 +20,15 @@
 
 #include "anchor.h"
 
+std::mutex mtx;  // 定义互斥锁
+uint_t total_sub_suffix_array = 0;  // 初始化计数器
+
+void increment_count(uint_t& total_sub_suffix_array, uint_t length) {
+	std::lock_guard<std::mutex> lock(mtx);
+	total_sub_suffix_array += length;
+}
+
+
 void saveIntervalsToCSV(const Intervals& intervals, const std::string& filename) {
 	std::ofstream file(filename); // Opens the file for writing.
 	if (!file.is_open()) { // Checks if the file is successfully opened.
@@ -306,6 +315,7 @@ void AnchorFinder::constructISAParallel(uint_t thread_num) {
 // or executes a single-threaded search.
 RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
 	logger.info() << "Begin to search anchors" << std::endl;
+	total_sub_suffix_array = 0;
 	ThreadPool pool(thread_num); // Use thread pool for potential parallel execution
 	uint_t depth = 0;
 	Anchor* root = new Anchor(depth); // Create root anchor node
@@ -327,6 +337,7 @@ RareMatchPairs AnchorFinder::lanuchAnchorSearching() {
 	RareMatchPairs final_anchors = verifyAnchors(root->mergeRareMatchPairs()); // Merge rare match pairs from the root anchor
 	saveRareMatchPairsToCSV(final_anchors, joinPaths(save_file_path, FINAL_ANCHOR_NAME), first_seq_len);
 
+	logger.info() << "New sub suffix array length is " << total_sub_suffix_array - (first_seq_len + second_seq_len) << ". Compared to a multiple of the original sequence length is " << (float)(total_sub_suffix_array - (first_seq_len + second_seq_len)) / (first_seq_len + second_seq_len) << std::endl;
 	delete root; // Clean up the root anchor
 	logger.info() << "Finish searching anchors" << std::endl;
 
@@ -355,6 +366,7 @@ void AnchorFinder::locateAnchor(ThreadPool& pool, uint_t depth, uint_t task_id, 
 	}
 
 	uint_t new_array_len = fst_len + scd_len;
+	increment_count(total_sub_suffix_array, new_array_len);
 
 	// Prepare arrays to hold new SA, LCP, and DA values.
 	std::vector<uint_t> new_index_of_SA;

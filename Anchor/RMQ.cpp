@@ -194,8 +194,6 @@ int_t LinearSparseTable::queryMin(uint_t l, uint_t r) const {
 		return getMinValue(ans1, ans2); // Return the overall minimum
 	}
 	else { // If l and r are in the same block
-		uint_t m = f[r] >> pos[l];
-		uint_t q = CTZ(m);
 		return LCP[l + CTZ(f[r] >> pos[l]) - 1]; // Directly query within the block
 	}
 }

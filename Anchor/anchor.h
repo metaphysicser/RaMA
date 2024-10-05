@@ -26,12 +26,19 @@
 #include "rare_match.h"
 #include "threadpool.h"
 #include "RMQ.h"
+#include <thread>
+#include <mutex>
 #include <omp.h>
 
 #define SAVE_DIR "save"
 #define ANCHORFINDER_NAME "anchorfinder.bin"
 #define FIRST_ANCHOR_NAME "first_anchor.csv"
 #define FINAL_ANCHOR_NAME "final_anchor.csv"
+
+extern std::mutex mtx;
+extern uint_t total_sub_suffix_array;  // Counter for the total number of sub suffix arrays
+
+void increment_count(uint_t& total_sub_suffix_array, uint_t length);
 
 struct Interval
 {

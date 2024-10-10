@@ -21,7 +21,9 @@
 
 #include "gsacak.h"
 #include "utils.h"
-
+#include <thread>
+#include <mutex>
+#include <chrono>
 #include <cassert>
 #include <stdint.h>
 #include <iostream>
@@ -38,27 +40,36 @@
 // such as memory usage and execution time.
 class PerformanceMonitor {
 public:
-    // Constructor initializes the monitoring process.
-    PerformanceMonitor();
+	// Constructor initializes the monitoring process.
+	PerformanceMonitor();
 
-    // Returns a string containing various performance metrics.
-    std::string getPerformanceMetrics();
+	// Returns a string containing various performance metrics.
+	std::string getPerformanceMetrics();
 
-    // Retrieves the maximum memory usage recorded during the lifetime of the monitor.
-    std::string getMaxMemory() const;
+	// Retrieves the maximum memory usage recorded during the lifetime of the monitor.
+	std::string getMaxMemory();
 
-    // Resets the monitoring data to start fresh measurements.
-    void reset();
+	// Resets the monitoring data to start fresh measurements.
+	void reset();
+
+	void startMemoryMonitoring();
+	void stopMemoryMonitoring();
+	~PerformanceMonitor();
 
 private:
-    // Formats the memory usage from bytes to a more readable string format.
-    std::string formatMemoryUsage(uint_t bytes) const;
+	// Formats the memory usage from bytes to a more readable string format.
+	std::string formatMemoryUsage(uint_t bytes) const;
 
-    // Stores the start time of the performance monitoring for calculating elapsed time.
-    std::chrono::steady_clock::time_point start_time;
+	// Stores the start time of the performance monitoring for calculating elapsed time.
+	std::chrono::steady_clock::time_point start_time;
 
-    // Records the maximum memory usage observed.
-    uint_t max_memory;
+	// Records the maximum memory usage observed.
+	uint_t max_memory;
+
+	bool stop_monitoring;
+	std::thread monitoring_thread;
+	std::mutex memory_mutex;
+	void monitorMemory();
 };
 
 // LogLevel enum defines different levels of logging, such as error, info, and debug.
@@ -69,65 +80,65 @@ enum LogLevel { error, info, debug };
 class Logger : public std::streambuf, public std::ostream {
 private:
 
-    std::string program_name;
+	std::string program_name;
 
-    // Directory where log files are stored.
-    std::string dir;
+	// Directory where log files are stored.
+	std::string dir;
 
-    // Path to the current log file.
-    std::string log_file;
+	// Path to the current log file.
+	std::string log_file;
 
-    // Directory where backups of log files are stored.
-    std::string backup_dir;
+	// Directory where backups of log files are stored.
+	std::string backup_dir;
 
-    // Indicates whether to also print log messages to the standard output.
-    bool add_cout;
+	// Indicates whether to also print log messages to the standard output.
+	bool add_cout;
 
-    // Output stream for writing log messages to a file.
-    std::ofstream* os;
+	// Output stream for writing log messages to a file.
+	std::ofstream* os;
 
-    // PerformanceMonitor instance for recording and logging performance metrics.
-    PerformanceMonitor* monitor;
+	// PerformanceMonitor instance for recording and logging performance metrics.
+	PerformanceMonitor* monitor;
 
-    // Current logging level of a message being processed.
-    LogLevel cur_level;
+	// Current logging level of a message being processed.
+	LogLevel cur_level;
 
-    // Maximum logging level to output; messages above this level are ignored.
-    LogLevel max_level;
+	// Maximum logging level to output; messages above this level are ignored.
+	LogLevel max_level;
 
 public:
-    // Constructor initializes the Logger with a directory for logs, program name,
-    // whether to add console output, and the maximum log level.
-    explicit Logger(const std::string& _program_name, bool _add_cout = true, LogLevel _max_level = LogLevel::info);
+	// Constructor initializes the Logger with a directory for logs, program name,
+	// whether to add console output, and the maximum log level.
+	explicit Logger(const std::string& _program_name, bool _add_cout = true, LogLevel _max_level = LogLevel::info);
 
-    // Copy constructor is deleted to prevent copying of Logger instances.
-    Logger(const Logger&) = delete;
+	// Copy constructor is deleted to prevent copying of Logger instances.
+	Logger(const Logger&) = delete;
 
-    void setDir(std::string& dir);
+	void setDir(std::string& dir);
 
-    // Adds a new log entry, potentially rotating the log file if necessary.
-    void addNewLog();
+	// Adds a new log entry, potentially rotating the log file if necessary.
+	void addNewLog();
 
-    // Backs up the current log file to a specified backup directory.
-    void backup();
+	// Backs up the current log file to a specified backup directory.
+	void backup();
 
-    // Override from std::streambuf, handles the buffering of log messages.
-    int overflow(int c) override;
+	// Override from std::streambuf, handles the buffering of log messages.
+	int overflow(int c) override;
 
-    // Forces flushing the buffered log messages to the output stream.
-    void forceFlush();
+	// Forces flushing the buffered log messages to the output stream.
+	void forceFlush();
 
-    // Sets the current log level to error, info, or debug, and returns a reference to the logger.
-    Logger& error();
-    Logger& info();
-    Logger& debug();
+	// Sets the current log level to error, info, or debug, and returns a reference to the logger.
+	Logger& error();
+	Logger& info();
+	Logger& debug();
 
-    bool isDebugEnabled();
+	bool isDebugEnabled();
 
-    std::string getMaxMemoryUsed() const;
+	std::string getMaxMemoryUsed() const;
 
-    // Destructor cleans up resources, such as closing file streams.
-    ~Logger() override;
+	// Destructor cleans up resources, such as closing file streams.
+	~Logger() override;
 };
 
 // Global logger instance for use throughout the application.

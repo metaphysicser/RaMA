@@ -19,9 +19,40 @@
  // Created: 2024-01-30
 #include "logging.h"
 
+void PerformanceMonitor::startMemoryMonitoring() {
+	stop_monitoring = false;
+	monitoring_thread = std::thread(&PerformanceMonitor::monitorMemory, this);
+}
+
+void PerformanceMonitor::stopMemoryMonitoring() {
+	stop_monitoring = true;
+	if (monitoring_thread.joinable()) {
+		monitoring_thread.join();
+	}
+}
+
+void PerformanceMonitor::monitorMemory() {
+	while (!stop_monitoring) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		struct rusage usage;
+		if (getrusage(RUSAGE_SELF, &usage) == 0) {
+			uint_t current_memory = usage.ru_maxrss * 1024L;
+			std::lock_guard<std::mutex> lock(memory_mutex);
+			if (current_memory > max_memory) {
+				max_memory = current_memory;
+			}
+		}
+	}
+}
+
 // Constructor: Initializes the performance monitor by resetting its metrics.
-PerformanceMonitor::PerformanceMonitor() {
+PerformanceMonitor::PerformanceMonitor() : stop_monitoring(false), max_memory(0) {
 	reset();
+	startMemoryMonitoring();
+}
+
+PerformanceMonitor::~PerformanceMonitor() {
+	stopMemoryMonitoring();  // Í£Ö¹ÄÚ´æ¼à¿Ø
 }
 
 // Retrieves performance metrics, including elapsed time and memory usage.
@@ -76,6 +107,7 @@ std::string PerformanceMonitor::formatMemoryUsage(uint_t bytes) const {
 
 // Resets the performance monitor to start a new monitoring session.
 void PerformanceMonitor::reset() {
+	std::lock_guard<std::mutex> lock(memory_mutex);
 	// Reset start time to the current time.
 	start_time = std::chrono::steady_clock::now();
 	// Reset maximum memory usage observed to 0.
@@ -83,10 +115,10 @@ void PerformanceMonitor::reset() {
 }
 
 // Retrieves the maximum memory usage observed in a formatted string.
-std::string PerformanceMonitor::getMaxMemory() const {
+std::string PerformanceMonitor::getMaxMemory() {
+	std::lock_guard<std::mutex> lock(memory_mutex);
 	std::stringstream ss;
 	ss << "MaxMemory: ";
-	// Format the maximum memory usage into a readable string with appropriate units.
 	if (max_memory < 1024) {
 		ss << max_memory << " B";
 	}
@@ -99,7 +131,7 @@ std::string PerformanceMonitor::getMaxMemory() const {
 	else {
 		ss << std::fixed << std::setprecision(1) << max_memory / 1073741824.0 << " GB";
 	}
-	return ss.str(); // Return the formatted maximum memory usage.
+	return ss.str();
 }
 
 

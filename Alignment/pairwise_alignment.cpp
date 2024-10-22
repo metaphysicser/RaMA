@@ -93,6 +93,7 @@ PairAligner::PairAligner(std::string save_file_path, int_t match, int_t mismatch
 	attributes.affine2p_penalties.gap_extension2 = gap_extension2; // E2 > 0
 
 	attributes.memory_mode = wavefront_memory_med;
+	// attributes.memory_mode = wavefront_memory_ultralow;
 
 	//attributes.heuristic.strategy = wf_heuristic_wfadaptive;
 	//attributes.heuristic.min_wavefront_length = 10;
@@ -378,7 +379,7 @@ cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar
 	if (!csv_file.is_open()) {
 		logger.error() << "Error opening file " << confidence_csv << std::endl;
 	}
-	csv_file << "cigar,confidence,rare match\n";
+	csv_file << "cigar,reliablity,rare match\n";
 
 	// Iterate through each cigar vector and add its units to the final_cigar vector.
 	// Also intersperse 'anchor' operations between the cigar vectors.
@@ -513,6 +514,7 @@ void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& 
 
 		// Check if parallel processing is enabled.
 		if (thread_num) {
+			logger.debug() << "Enqueueing alignment task for interval " << index << " to thread pool." << std::endl;
 			// If parallel processing is enabled, enqueue alignment tasks to the thread pool.
 			pool.enqueue([this, seq1, seq2, &aligned_interval_cigar, index]() {
 				// Create a new wavefront aligner instance with specified attributes.
@@ -529,6 +531,7 @@ void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& 
 				});
 		}
 		else {
+			logger.debug() << "Enqueueing alignment task for interval " << index << " to thread pool." << std::endl;
 			// If parallel processing is not enabled, perform the alignment in the main thread.
 			wavefront_aligner_t* const wf_aligner = wavefront_aligner_new(&attributes);
 			wavefront_align(wf_aligner, seq1.c_str(), seq1.length(), seq2.c_str(), seq2.length());

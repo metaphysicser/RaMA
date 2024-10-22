@@ -77,9 +77,9 @@ After running RaMA, the following output files will be generated in the specifie
 
 1. **aligned.fasta**: Alignment results in FASTA format.
 2. **cigar.txt**: Alignment results in CIGAR format.
-3. **confidence.csv**: Contains information about the alignment confidence and rare matches.We define a rare match as an alignment with high confidence. Furthermore, if the alignment result between rare matches consists of a simple insertion, simple deletion, or a perfect match, this interval is also considered a confident alignment. Example content:
+3. reliable_region.csv: Contains information about the alignment reliability and rare matches. We define a rare match as an alignment with high reliability. Additionally, if the alignment result between rare matches consists of a simple insertion, simple deletion, or a perfect match, this interval is also considered part of the Rare Match-based Reliable Region. Example content:
    ```plaintext
-   cigar    confidence    rare match
+   cigar    reliablity    rare match
    1178I    1             0
    326=     1             1
    1X       1             0

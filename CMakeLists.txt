@@ -1,7 +1,7 @@
 ﻿# CMake project configuration for RaMA.
 cmake_minimum_required (VERSION 3.1)
 
-project(RaMA VERSION 1.1)
+project(RaMA VERSION 1.2.0)
 # Set C++17 as the project standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

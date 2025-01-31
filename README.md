@@ -12,7 +12,7 @@ We highly recommand you install RaMA via conda. Simply run the following command
 ~~~
 conda create -n RaMA
 conda activate RaMA
-conda install -c malab rama
+conda install -c malab -c conda-forge rama
 RaMA -h
 ~~~
 ### Install via source code

@@ -33,7 +33,6 @@ cigar convertToCigarVector(uint32_t* cigar_buffer, int cigar_length) {
 	return result_cigar; // Return the populated vector of CIGAR operations.
 }
 
-
 uint32_t cigarToInt(char operation, uint32_t len) {
 	uint32_t opCode;
 	// Convert CIGAR operation character to an operation code
@@ -50,7 +49,6 @@ uint32_t cigarToInt(char operation, uint32_t len) {
 	return (len << 4) | opCode; // Shift length left by 4 bits, then combine with opCode
 }
 
-
 void intToCigar(uint32_t cigar, char& operation, uint32_t& len) {
 	uint32_t opCode = cigar & 0xF; // Extract the lower 4 bits as the operation code
 	len = cigar >> 4; // Extract the length by shifting right by 4 bits
@@ -66,7 +64,6 @@ void intToCigar(uint32_t cigar, char& operation, uint32_t& len) {
 	default: operation = '?'; break; // Unknown operation
 	}
 }
-
 
 PairAligner::PairAligner(std::string save_file_path, int_t match, int_t mismatch, int_t gap_open1, int_t gap_extension1, int_t gap_open2, int_t gap_extension2, uint_t thread_num) :
 	save_file_path(save_file_path),
@@ -99,11 +96,10 @@ PairAligner::PairAligner(std::string save_file_path, int_t match, int_t mismatch
 	//attributes.heuristic.min_wavefront_length = 10;
 	//attributes.heuristic.max_distance_threshold = 50;
 	//attributes.heuristic.steps_between_cutoffs = 1;
-
 }
 
 // Function to align two sequences based on given rare match pairs (anchors) and save the results.
-void PairAligner::alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors) {
+void PairAligner::alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors, bool sam_output, bool paf_output) {
 	// Define the whole sequence interval for both sequences.
 	Interval interval(0, data[0].seq_len, 0, data[1].seq_len);
 
@@ -127,10 +123,15 @@ void PairAligner::alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchP
 
 	// Convert the final CIGAR string to a FASTA format and save it to a file for visualization or further analysis.
 	cigarToFasta(final_cigar, data, joinPaths(save_file_path, FASTA_NAME));
+	if (sam_output) {
+		cigarToSAM(final_cigar, data, joinPaths(save_file_path, SAM_NAME));
+	}
+	if (paf_output) {
+		cigarToPAF(final_cigar, data, joinPaths(save_file_path, PAF_NAME));
+	}
 
 	return; // End of the function.
 }
-
 
 // Function to align specified intervals within sequences and combine the result with anchor alignments.
 cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align, const RareMatchPairs& anchors) {
@@ -252,8 +253,6 @@ cigar PairAligner::alignIntervals(const std::vector<SequenceInfo>& data, const I
 	return combineCigarsWithAnchors(aligned_interval_cigar, anchors);
 }
 
-
-
 void PairAligner::verifyCigar(const cigar& final_cigar, const std::vector<SequenceInfo>& data) {
 	if (data.size() < 2) {
 		logger.error() << "Not enough sequences provided for verification.\n";
@@ -350,7 +349,6 @@ void PairAligner::saveCigarToTxt(const cigar& final_cigar, const std::string& fi
 	logger.info() << "CIGAR has been saved to " << filename << std::endl;
 }
 
-
 void PairAligner::printCigarDebug(const std::vector<SequenceInfo>& data, const cigars& aligned_interval_cigar, const Intervals& intervals_need_align) {
 	for (uint_t i = 0; i < aligned_interval_cigar.size(); i++) {
 		Interval tmp_interval = intervals_need_align[i];
@@ -367,7 +365,7 @@ void PairAligner::printCigarDebug(const std::vector<SequenceInfo>& data, const c
 	}
 }
 
-// This function combines multiple cigar vectors and intersperses them with 'anchor' operations. 
+// This function combines multiple cigar vectors and intersperses them with 'anchor' operations.
 // It also removes any zero-length operations from the start and end of the combined vector.
 cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar, const RareMatchPairs& anchors) {
 	cigar final_cigar;
@@ -392,7 +390,6 @@ cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar
 				csv_file << len << operation << "," << 1 << "," << 0 << "\n";
 				final_cigar.push_back(single_cigar[0]);
 			}
-
 		}
 		else {
 			for (const auto& unit : single_cigar) {
@@ -412,7 +409,6 @@ cigar PairAligner::combineCigarsWithAnchors(const cigars& aligned_interval_cigar
 			csv_file << anchor_cigar->match_length << "=," << 1 << "," << 1 << "\n";
 			++anchor_cigar;
 		}
-
 	}
 
 	// Remove zero-length operations from the start of the final_cigar, if present.
@@ -499,6 +495,200 @@ void PairAligner::cigarToFasta(const cigar& final_cigar, const std::vector<Seque
 	logger.info() << fasta_filename << " has been saved successfully!" << std::endl;
 }
 
+void PairAligner::cigarToSAM(const cigar& final_cigar, const std::vector<SequenceInfo>& data, const std::string& sam_filename) {
+	if (data.size() < 2) {
+		logger.error() << "Not enough sequences provided for CIGAR to SAM conversion.\n";
+		return;
+	}
+
+	// Open the output SAM file.
+	std::ofstream sam_file(sam_filename);
+	if (!sam_file.is_open()) {
+		logger.error() << "Failed to open SAM output file: " << sam_filename << std::endl;
+		return;
+	}
+
+	const std::string& reference_seq = data[0].sequence; // Reference sequence
+	const std::string& query_seq = data[1].sequence; // Query sequence
+	std::string cigar_str; // CIGAR string for the SAM output
+	uint_t ref_pos = 0, query_pos = 0;  // Pointers for reference and query sequences
+	uint_t ref_start = 1;
+
+	// Process each unit in the CIGAR string and build aligned query sequence.
+	std::string aligned_query;  // We only need the aligned query sequence for SAM output
+	bool is_first = true;  // Flag to indicate whether it's the first operation in the CIGAR
+	for (const auto& unit : final_cigar) {
+		char operation;
+		uint32_t len;
+		intToCigar(unit, operation, len);
+
+		// If it's the first operation and a deletion ('D'), adjust the reference sequence's start position
+		if (is_first && operation == 'D') {
+			ref_start += len;  // Skip the initial deletion in the reference sequence
+			ref_pos += len;
+			is_first = false;
+			continue;
+		}
+
+		// If it's the last operation and a deletion ('D'), skip it
+		if (unit == final_cigar.back() && operation == 'D') {
+			ref_pos += len;  // Skip the final deletion in the reference sequence
+			continue;
+		}
+
+		switch (operation) {
+		case '=': // Sequence match
+		case 'X': // Mismatch
+		case 'M': // Generic match/mismatch
+			aligned_query.append(query_seq.substr(query_pos, len));
+			ref_pos += len;
+			query_pos += len;
+			cigar_str += std::to_string(len) + "M";
+			break;
+		case 'I': // Insertion
+			aligned_query.append(query_seq.substr(query_pos, len));
+			query_pos += len;
+			cigar_str += std::to_string(len) + operation;
+			break;
+		case 'D': // Deletion
+			aligned_query.append(len, '-'); // Add gaps to query sequence
+			ref_pos += len;
+			cigar_str += std::to_string(len) + operation;
+			break;
+		default:
+			logger.error() << "Unknown CIGAR operation '" << operation << "' encountered.\n";
+			sam_file.close();
+			return;
+		}
+	}
+
+	// Writing the SAM header.
+	sam_file << "@HD\tVN:1.6\tSO:unsorted\n";  // SAM file header
+	sam_file << "@SQ\tSN:" << data[0].header << "\tLN:" << reference_seq.length() << "\n";
+	// sam_file << "@RG\tID:default\tSM:unknown\tLB:unknown\tPL:unknown\tQRY:" << data[1].header << "_L" << query_seq.length() << "\n";
+	sam_file << "@PG\tID:RaMA\tPN:RaMA\tVN:" << RAMA_VERSION << "\n";
+
+	uint32_t flag = 0;
+	uint32_t mapq = 60;
+
+	// Writing the aligned sequences in SAM format for the query
+	sam_file << data[1].header << "\t" << flag << "\t" << data[0].header << "\t" << ref_start << "\t"
+		<< mapq << "\t" << cigar_str << "\t" << "*" << "\t" << 0 << "\t" << 0
+		<< "\t" << query_seq << "\t" << "*" << "\n";
+
+	sam_file.close();
+	logger.info() << sam_filename << " has been saved successfully!" << std::endl;
+}
+
+void PairAligner::cigarToPAF(const cigar& final_cigar, const std::vector<SequenceInfo>& data, const std::string& paf_filename) {
+	if (data.size() < 2) {
+		logger.error() << "Not enough sequences provided for CIGAR to PAF conversion.\n";
+		return;
+	}
+
+	std::ofstream paf_file(paf_filename);
+	if (!paf_file.is_open()) {
+		logger.error() << "Failed to open PAF output file: " << paf_filename << std::endl;
+		return;
+	}
+
+	const std::string& reference_seq = data[0].sequence;
+	const std::string& query_seq = data[1].sequence;
+
+	// Initialize tracking variables
+	uint_t ref_pos = 0, query_pos = 0;
+	uint_t matching_bases = 0;
+	std::string cigar_str;
+	char strand = '+';  // Assume forward strand, should adjust based on alignment direction
+
+	// New: Track the start and end of the alignment region
+	uint_t query_start = 0;  // Initially set to 0
+	uint_t reference_start = 0;
+
+	// Process CIGAR
+	bool is_first = true;  // Flag to indicate whether it's the first operation in the CIGAR
+	for (const auto& unit : final_cigar) {
+		char operation;
+		uint32_t len;
+		intToCigar(unit, operation, len);
+
+		// If it's the first operation and a deletion ('D'), adjust the reference sequence's start position
+		if (is_first && operation == 'D') {
+			reference_start += len;  // Skip the initial deletion in the reference sequence
+			ref_pos += len;
+			is_first = false;
+			continue;
+		}
+
+		// If it's the last operation and a deletion ('D'), skip it
+		if (unit == final_cigar.back() && operation == 'D') {
+			ref_pos += len;  // Skip the final deletion in the reference sequence
+			continue;
+		}
+
+		// Handle other operations
+		switch (operation) {
+		case '=':  // Exact match
+			matching_bases += len;
+			// No break, continue with M operation
+		case 'M':  // Match/mismatch (assuming M is a match)
+			ref_pos += len;
+			query_pos += len;
+			cigar_str += std::to_string(len) + operation;
+			break;
+		case 'X':  // Mismatch
+			ref_pos += len;
+			query_pos += len;
+			cigar_str += std::to_string(len) + operation;
+			break;
+		case 'I':  // Insertion
+			query_pos += len;
+			cigar_str += std::to_string(len) + operation;
+			break;
+		case 'D':  // Deletion
+			ref_pos += len;
+			cigar_str += std::to_string(len) + operation;
+			break;
+		default:
+			logger.error() << "Unknown CIGAR operation '" << operation << "'\n";
+			paf_file.close();
+			return;
+		}
+
+		is_first = false;  // Mark that the first operation has been processed
+	}
+
+	// Calculate key fields
+	uint_t query_length = query_seq.length();
+	uint_t reference_length = reference_seq.length();
+	uint_t query_end = query_pos;  // Actual alignment end position
+	uint_t reference_end = ref_pos;
+	uint_t total_length = query_end - query_start;  // Total alignment length
+
+	// Write to PAF (12 mandatory fields + optional fields)
+	paf_file
+		<< data[1].header << "\t"        // 1. Query name
+		<< query_length << "\t"          // 2. Query length
+		<< query_start << "\t"           // 3. Query start
+		<< query_end << "\t"             // 4. Query end
+		<< strand << "\t"                // 5. Strand direction
+		<< data[0].header << "\t"        // 6. Target name
+		<< reference_length << "\t"      // 7. Target length
+		<< reference_start << "\t"       // 8. Target start
+		<< reference_end << "\t"         // 9. Target end
+		<< matching_bases << "\t"        // 10. Matching bases count
+		<< total_length << "\t"          // 11. Total alignment length
+		<< 255;                          // 12. Quality value (255 means missing)
+
+	if (!cigar_str.empty()) {
+		paf_file << "\tcg:Z:" << cigar_str;
+	}
+	paf_file << "\n";
+
+	paf_file.close();
+	logger.info() << paf_filename << " saved successfully!" << std::endl;
+}
+
 // Function to align sequences within specified intervals using the wavefront alignment method.
 void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align, std::vector<uint_t>& aligned_intervals_index, cigars& aligned_interval_cigar) {
 	ThreadPool pool(thread_num); // Create a thread pool with the determined number of threads.
@@ -527,7 +717,7 @@ void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& 
 				cigar_get_CIGAR(wf_aligner->cigar, true, &cigar_buffer, &cigar_length);
 				// Convert the CIGAR buffer to a vector and store it in the aligned_interval_cigar vector.
 				aligned_interval_cigar[index] = convertToCigarVector(cigar_buffer, cigar_length);
-				wavefront_aligner_delete(wf_aligner); // Free the aligner resources. 
+				wavefront_aligner_delete(wf_aligner); // Free the aligner resources.
 				});
 		}
 		else {
@@ -548,8 +738,3 @@ void PairAligner::alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& 
 	}
 	logger.info() << "Wavefront alignment of intervals has been completed." << std::endl;
 }
-
-
-
-
-

@@ -30,7 +30,9 @@ extern "C" {
 
 #define INTERVAL_NAME "intervals_need_align.csv"
 #define CIGAR_NAME "cigar.txt"
-#define FASTA_NAME "aligned.fasta"
+#define FASTA_NAME "output.fasta"
+#define SAM_NAME "output.sam"
+#define PAF_NAME "output.paf"
 #define CONFIDENCE_CSV "reliable_region.csv"
 
 // Define types for handling CIGAR strings.
@@ -80,6 +82,10 @@ private:
 
 	// Convert Cigar to fasta file.
 	void cigarToFasta(const cigar& final_cigar, const std::vector<SequenceInfo>& data, const std::string& fasta_filename);
+	// Convert Cigar to SAM file.
+	void cigarToSAM(const cigar& final_cigar, const std::vector<SequenceInfo>& data, const std::string& sam_filename);
+	// Convert Cigar to PAF file.
+	void cigarToPAF(const cigar& final_cigar, const std::vector<SequenceInfo>& data, const std::string& paf_filename);
 
 	// Use the wavefront alignment algorithm to align sequence intervals.
 	void alignIntervalsUsingWavefront(const std::vector<SequenceInfo>& data, const Intervals& intervals_need_align, std::vector<uint_t>& aligned_intervals_index, cigars& aligned_interval_cigar);
@@ -89,7 +95,7 @@ public:
 	explicit PairAligner(std::string save_file_path, int_t match = 0, int_t mismatch = 3, int_t gap_open1 = 4, int_t gap_extension1 = 2, int_t gap_open2 = 12, int_t gap_extension2 = 1, uint_t thread_num = 0);
 
 	// Perform pairwise sequence alignment using provided data and optional anchors.
-	void alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors = {});
+	void alignPairSeq(const std::vector<SequenceInfo>& data, RareMatchPairs anchors = {}, bool sam_output = false, bool paf_output = false);
 
 	// Overload of alignPairSeq to allow calling without explicitly specifying anchors.
 	void alignPairSeq(const std::vector<SequenceInfo>& data) {

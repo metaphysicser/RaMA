@@ -1,7 +1,7 @@
 ﻿# RaMA
 ![Platforms](https://anaconda.org/malab/rama/badges/platforms.svg) ![last_release](https://anaconda.org/malab/rama/badges/latest_release_date.svg) ![license](https://anaconda.org/malab/rama/badges/license.svg)
 
-**RaMA** (Rare Match Aligner) is a high-performance tool specialized in **pairwise centromere alignment**, optimized for ultra-long tandem repeats in complex genomic regions. Leveraging rare matches as anchors and a 2-piece affine gap cost model, RaMA is specifically designed for aligned centromere sequences, delivering highly accurate and efficient pairwise alignments for **assembled centromere regions**.
+[**RaMA**](https://doi.org/10.1101/gr.279763.124) (Rare Match Aligner) is a high-performance tool specialized in **pairwise centromere alignment**, optimized for ultra-long tandem repeats in complex genomic regions. Leveraging rare matches as anchors and a 2-piece affine gap cost model, RaMA is specifically designed for aligned centromere sequences, delivering highly accurate and efficient pairwise alignments for **assembled centromere regions**.
 
 ## Get Started
 RaMA can be installed using two methods: via conda or by compiling the source code. 
@@ -104,7 +104,6 @@ After running RaMA, the following output files will be generated in the specifie
 [Apache 2.0](https://github.com/metaphysicser/RaMA/blob/master/LICENSE) © [[MALABZ_UESTC](https://github.com/malabz) [Pinglu Zhang](https://metaphysicser.github.io/)]
 
 ## Contact
-
 RaMA is actively developed and maintained by [ZOU's Lab](https://github.com/malabz). For any questions, feedback, or support, we encourage you to connect with us:
 
 - **Issue Tracker**: For reporting bugs, suggesting enhancements, or requesting features, please use our [GitHub Issues](https://github.com/metaphysicser/RaMA/issues).
